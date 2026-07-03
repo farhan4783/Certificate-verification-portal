@@ -9,13 +9,21 @@ declare global {
 
 let prisma: PrismaClient;
 
+const connectionString = process.env.DATABASE_URL;
+const isExternalDb = connectionString?.includes("supabase.co") || connectionString?.includes("neon.tech") || connectionString?.includes("aivencloud.com");
+
+const poolConfig = {
+  connectionString,
+  ssl: isExternalDb ? { rejectUnauthorized: false } : undefined,
+};
+
 if (process.env.NODE_ENV === "production") {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool(poolConfig);
   const adapter = new PrismaPg(pool);
   prisma = new PrismaClient({ adapter });
 } else {
   if (!global.prisma) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const pool = new Pool(poolConfig);
     const adapter = new PrismaPg(pool);
     global.prismaPool = pool;
     global.prisma = new PrismaClient({ adapter });
@@ -24,3 +32,4 @@ if (process.env.NODE_ENV === "production") {
 }
 
 export default prisma;
+
