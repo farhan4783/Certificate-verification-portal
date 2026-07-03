@@ -1,0 +1,274 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ORG_ADMIN
+  TRAINER
+  STUDENT
+}
+
+enum CertificateStatus {
+  DRAFT
+  GENERATED
+  ISSUED
+  REVOKED
+  EXPIRED
+}
+
+enum CourseStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum VerificationResult {
+  VALID
+  INVALID
+  REVOKED
+  EXPIRED
+}
+
+enum AuditAction {
+  LOGIN
+  CREATE
+  UPDATE
+  DELETE
+  GENERATE
+  EMAIL
+  DOWNLOAD
+  VERIFY
+}
+
+model Organization {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  logo      String?   // Cloudinary URL
+  website   String?
+  email     String?
+  phone     String?
+  address   String?
+  createdAt DateTime  @default(now())
+  users     User[]
+  trainers  Trainer[]
+  students  Student[]
+  courses   Course[]
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  email          String        @unique
+  password       String        // bcrypt hash
+  role           UserRole
+  organizationId String        @db.Uuid
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  trainer        Trainer?
+  student        Student?
+  auditLogs      AuditLog[]
+
+  @@index([organizationId])
+}
+
+model Trainer {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String             @unique @db.Uuid
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designation    String?
+  bio            String?
+  photo          String?            // Cloudinary URL
+  signature      String?            // Cloudinary URL
+  organizationId String             @db.Uuid
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  courses        Course[]
+  certificates   Certificate[]
+  batches        CertificateBatch[]
+
+  @@index([organizationId])
+}
+
+model Student {
+  id               String        @id @default(uuid()) @db.Uuid
+  userId           String        @unique @db.Uuid
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollmentNumber String        @unique
+  courseId         String        @db.Uuid
+  course           Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  photo            String?       // Cloudinary URL
+  organizationId   String        @db.Uuid
+  organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  certificates     Certificate[]
+  emailLogs        EmailLog[]
+  projects         Project[]
+  achievements     Achievement[]
+
+  @@index([organizationId])
+  @@index([courseId])
+}
+
+model Course {
+  id             String             @id @default(uuid()) @db.Uuid
+  title          String
+  duration       String
+  description    String?
+  trainerId      String             @db.Uuid
+  trainer        Trainer            @relation(fields: [trainerId], references: [id], onDelete: Restrict)
+  status         CourseStatus       @default(ACTIVE)
+  organizationId String             @db.Uuid
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  students       Student[]
+  certificates   Certificate[]
+  batches        CertificateBatch[]
+
+  @@index([organizationId])
+  @@index([trainerId])
+  @@index([status])
+}
+
+model CertificateBatch {
+  id                String        @id @default(uuid()) @db.Uuid
+  trainerId         String        @db.Uuid
+  trainer           Trainer       @relation(fields: [trainerId], references: [id], onDelete: Restrict)
+  courseId          String        @db.Uuid
+  course            Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  batchName         String
+  totalCertificates Int
+  createdAt         DateTime      @default(now())
+  certificates      Certificate[]
+
+  @@index([trainerId, courseId])
+}
+
+model CertificateTemplate {
+  id              String        @id @default(uuid()) @db.Uuid
+  name            String
+  backgroundImage String?       // Cloudinary URL
+  orientation     String        // "landscape" or "portrait"
+  font            String?
+  version         Int           @default(1)
+  active          Boolean       @default(true)
+  certificates    Certificate[]
+}
+
+model Certificate {
+  id                String              @id @default(uuid()) @db.Uuid
+  certificateId     String              @unique // human-readable ID
+  studentId         String              @db.Uuid
+  student           Student             @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  trainerId         String              @db.Uuid
+  trainer           Trainer             @relation(fields: [trainerId], references: [id], onDelete: Restrict)
+  courseId          String              @db.Uuid
+  course            Course              @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  templateId        String              @db.Uuid
+  template          CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  batchId           String?             @db.Uuid
+  batch             CertificateBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  issueDate         DateTime
+  expiryDate        DateTime?
+  pdfUrl            String?             // Cloudinary URL
+  pdfHash           String?             // SHA-256 hash of PDF
+  qrCode            String?             // Cloudinary URL or embedded data
+  verificationToken String              @unique
+  status            CertificateStatus   @default(DRAFT)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  verificationLogs  VerificationLog[]
+  emailLogs         EmailLog[]
+
+  @@index([status])
+  @@index([issueDate])
+  @@index([studentId])
+  @@index([trainerId])
+  @@index([courseId])
+  @@index([batchId])
+  @@index([verificationToken])
+}
+
+model VerificationLog {
+  id            String             @id @default(uuid()) @db.Uuid
+  certificateId String             @db.Uuid
+  certificate   Certificate        @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  result        VerificationResult
+  ipAddress     String?
+  device        String?
+  userAgent     String?
+  referrer      String?
+  country       String?
+  verifiedAt    DateTime           @default(now())
+
+  @@index([certificateId])
+  @@index([verifiedAt])
+}
+
+model AuditLog {
+  id        String      @id @default(uuid()) @db.Uuid
+  userId    String?     @db.Uuid
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    AuditAction
+  table     String
+  recordId  String      @db.Uuid
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model EmailLog {
+  id            String       @id @default(uuid()) @db.Uuid
+  studentId     String?      @db.Uuid
+  student       Student?     @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  certificateId String?      @db.Uuid
+  certificate   Certificate? @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+  status        EmailStatus
+  sentAt        DateTime     @default(now())
+
+  @@index([studentId])
+  @@index([certificateId])
+}
+
+model Project {
+  id             String    @id @default(uuid()) @db.Uuid
+  studentId      String    @db.Uuid
+  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  technologies   String[]
+  githubUrl      String?
+  liveDemoUrl    String?
+  completionDate DateTime?
+  thumbnail      String?   // Cloudinary URL
+  featured       Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  @@index([studentId])
+}
+
+model Achievement {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @db.Uuid
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  issuer         String
+  date           DateTime
+  category       String   // Category representation
+  badgeIcon      String?  // Cloudinary URL or badge name
+  supportingLink String?
+  featured       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([studentId])
+}
