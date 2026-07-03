@@ -35,6 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
           {[
             { href: "/dashboard/admin", label: "Overview", icon: "📊" },
+            { href: "/dashboard/admin/courses", label: "Courses", icon: "📚" },
             { href: "/dashboard/admin/trainers", label: "Trainers", icon: "👨‍🏫" },
             { href: "/dashboard/admin/students", label: "Students", icon: "🎓" },
             { href: "/dashboard/admin/certificates", label: "Certificates", icon: "📜" },
