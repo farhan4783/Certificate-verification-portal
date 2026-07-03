@@ -11,6 +11,23 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("Seeding database...");
 
+  // Clear existing data (order matters due to FK constraints)
+  await prisma.achievement.deleteMany();
+  await prisma.project.deleteMany();
+  await prisma.emailLog.deleteMany();
+  await prisma.verificationLog.deleteMany();
+  await prisma.auditLog.deleteMany();
+  await prisma.certificate.deleteMany();
+  await prisma.certificateBatch.deleteMany();
+  await prisma.certificateTemplate.deleteMany();
+  await prisma.student.deleteMany();
+  await prisma.course.deleteMany();
+  await prisma.trainer.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.organization.deleteMany();
+  console.log("Cleared existing data.");
+
+
   // 1. Create Organization
   const org = await prisma.organization.create({
     data: {
@@ -25,14 +42,16 @@ async function main() {
   console.log(`Created Organization: ${org.name} (${org.id})`);
 
   // Hash passwords
-  const passwordHash = await bcrypt.hash("Password@123", 12);
+  const adminPasswordHash = await bcrypt.hash("admin1234", 12);
+  const trainerPasswordHash = await bcrypt.hash("trainer1234", 12);
+  const studentPasswordHash = await bcrypt.hash("student1234", 12);
 
   // 2. Create Super Admin User
   const adminUser = await prisma.user.create({
     data: {
       name: "Super Admin",
       email: "admin@kodetocareer.com",
-      password: passwordHash,
+      password: adminPasswordHash,
       role: UserRole.SUPER_ADMIN,
       organizationId: org.id,
     },
@@ -44,7 +63,7 @@ async function main() {
     data: {
       name: "John Doe",
       email: "trainer@kodetocareer.com",
-      password: passwordHash,
+      password: trainerPasswordHash,
       role: UserRole.TRAINER,
       organizationId: org.id,
     },
@@ -57,6 +76,10 @@ async function main() {
       bio: "Industry expert with 10+ years of experience in Full Stack development.",
       photo: "https://res.cloudinary.com/demo/image/upload/v1620000000/trainer-photo.png",
       signature: "https://res.cloudinary.com/demo/image/upload/v1620000000/trainer-signature.png",
+      skills: ["JavaScript", "React", "Node.js", "PostgreSQL", "TypeScript"],
+      yearsOfExperience: 10,
+      linkedinUrl: "https://linkedin.com/in/johndoe",
+      githubUrl: "https://github.com/johndoe",
       organizationId: org.id,
     },
   });
@@ -80,7 +103,7 @@ async function main() {
     data: {
       name: "Jane Smith",
       email: "student@kodetocareer.com",
-      password: passwordHash,
+      password: studentPasswordHash,
       role: UserRole.STUDENT,
       organizationId: org.id,
     },
@@ -146,12 +169,11 @@ async function main() {
       studentId: student.id,
       title: "FinSync AI - FinTech Dashboard",
       description: "A professional FinTech dashboard built using Next.js, React, Tailwind CSS, and Gemini API.",
-      technologies: ["Next.js", "React", "Tailwind CSS", "Gemini API", "PostgreSQL"],
+      techStack: ["Next.js", "React", "Tailwind CSS", "Gemini API", "PostgreSQL"],
       githubUrl: "https://github.com/janesmith/finsync-ai",
-      liveDemoUrl: "https://finsync-ai.vercel.app",
-      completionDate: new Date(),
-      thumbnail: "https://res.cloudinary.com/demo/image/upload/v1620000000/project-thumbnail.png",
-      featured: true,
+      projectUrl: "https://finsync-ai.vercel.app",
+      imageUrl: "https://res.cloudinary.com/demo/image/upload/v1620000000/project-thumbnail.png",
+      isFeatured: true,
     },
   });
   console.log(`Created Student Project: ${project.title}`);
@@ -163,11 +185,10 @@ async function main() {
       title: "Top Bootcamp Performer",
       description: "Awarded for outstanding performance, code quality, and active community participation.",
       issuer: "Kode To Career",
-      date: new Date(),
-      category: "Top Performer",
-      badgeIcon: "award",
-      supportingLink: "https://kodetocareer.com/awards/2026-top-performer",
-      featured: true,
+      achievementDate: new Date(),
+      type: "AWARD",
+      credentialUrl: "https://kodetocareer.com/awards/2026-top-performer",
+      isFeatured: true,
     },
   });
   console.log(`Created Student Achievement: ${achievement.title}`);

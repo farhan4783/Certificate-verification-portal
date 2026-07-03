@@ -11,10 +11,16 @@ interface IssueCertificateInput {
   studentId: string;
   courseId: string;
   trainerId: string;
-  templateId: string;
+  templateId?: string;
   batchId?: string;
+  grade?: string;
   issueDate?: Date;
   expiryDate?: Date;
+}
+
+/** Standalone convenience wrapper around CertificateService.issueCertificate */
+export async function issueCertificate(input: IssueCertificateInput) {
+  return CertificateService.issueCertificate(input);
 }
 
 export class CertificateService {
@@ -52,13 +58,21 @@ export class CertificateService {
       throw new Error(`Trainer with ID ${trainerId} not found`);
     }
 
-    const template = await prisma.certificateTemplate.findUnique({
-      where: { id: templateId },
-    });
-
-    if (!template) {
-      throw new Error(`Certificate Template with ID ${templateId} not found`);
+    // Auto-select template: prefer the one linked to the course, then org's first active template
+    let resolvedTemplateId = templateId;
+    if (!resolvedTemplateId && course.templateId) {
+      resolvedTemplateId = course.templateId;
     }
+    if (!resolvedTemplateId) {
+      const firstTemplate = await prisma.certificateTemplate.findFirst({
+        where: { organizationId: student.organizationId, status: "ACTIVE" },
+        select: { id: true },
+      });
+      resolvedTemplateId = firstTemplate?.id;
+    }
+    const template = resolvedTemplateId
+      ? await prisma.certificateTemplate.findUnique({ where: { id: resolvedTemplateId } })
+      : null;
 
     // 2. Generate unique identifiers
     const certificateId = generateCertificateId(course.title);

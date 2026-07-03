@@ -1,65 +1,187 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Award, ShieldCheck, Download, Users, Zap, Lock } from "lucide-react";
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/50">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center">
+              <Award className="h-4 w-4 text-amber-400" />
+            </div>
+            <span className="font-bold text-sm tracking-wider bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">
+              KODE TO CAREER
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              Sign In
+            </Link>
+            <Link
+              href="/verify"
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-semibold text-sm rounded-lg transition-colors"
+            >
+              Verify Certificate
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-medium mb-8">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Blockchain-secured · Tamper-proof · Instant verification
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6 tracking-tight">
+            <span className="text-slate-100">Certificates you can </span>
+            <span className="bg-gradient-to-r from-amber-300 via-amber-400 to-orange-400 bg-clip-text text-transparent">
+              trust forever.
+            </span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed mb-10">
+            The Kode To Career platform issues, manages, and verifies digital certificates with SHA-256 integrity hashing, QR codes, and tamper-proof audit trails.
           </p>
+
+          {/* CTA */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              href="/login"
+              className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold rounded-xl transition-all hover:scale-105"
+            >
+              Access Dashboard →
+            </Link>
+            <Link
+              href="/verify"
+              className="px-6 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-semibold rounded-xl transition-all hover:border-slate-600"
+            >
+              Verify a Certificate
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 px-6 border-t border-slate-800/50">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-100 mb-3">
+              Everything you need for digital credentials
+            </h2>
+            <p className="text-slate-400 text-sm">
+              Built for training organizations, educational institutes, and learners.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              {
+                icon: <ShieldCheck className="h-5 w-5" />,
+                title: "Instant Verification",
+                desc: "Anyone can verify a certificate authenticity with a unique QR code or certificate ID — no login required.",
+                color: "amber",
+              },
+              {
+                icon: <Lock className="h-5 w-5" />,
+                title: "SHA-256 Integrity",
+                desc: "Every PDF is hashed with SHA-256 and stored immutably so any tampering is immediately detectable.",
+                color: "emerald",
+              },
+              {
+                icon: <Download className="h-5 w-5" />,
+                title: "PDF Generation",
+                desc: "Professionally designed A4 landscape PDFs with logos, signatures, QR codes, and organizational branding.",
+                color: "blue",
+              },
+              {
+                icon: <Users className="h-5 w-5" />,
+                title: "Multi-Role RBAC",
+                desc: "Separate, secure dashboards for Super Admins, Trainers, and Students with strict access controls.",
+                color: "violet",
+              },
+              {
+                icon: <Zap className="h-5 w-5" />,
+                title: "Bulk Issuance",
+                desc: "Issue certificates to entire batches simultaneously with automated email delivery and tracking.",
+                color: "rose",
+              },
+              {
+                icon: <Award className="h-5 w-5" />,
+                title: "Student Portfolios",
+                desc: "Students can build their project portfolio and track achievements — all linked to their credentials.",
+                color: "amber",
+              },
+            ].map((f) => {
+              const colorMap: Record<string, string> = {
+                amber: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                emerald: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                blue: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                violet: "bg-violet-500/10 text-violet-400 border-violet-500/20",
+                rose: "bg-rose-500/10 text-rose-400 border-rose-500/20",
+              };
+              return (
+                <div
+                  key={f.title}
+                  className="bg-slate-900 border border-slate-800 rounded-xl p-6 hover:border-slate-700 transition-all"
+                >
+                  <div className={`h-9 w-9 rounded-lg border flex items-center justify-center mb-4 ${colorMap[f.color]}`}>
+                    {f.icon}
+                  </div>
+                  <h3 className="text-sm font-semibold text-slate-200 mb-2">{f.title}</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Verify CTA */}
+      <section className="py-20 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20 rounded-2xl p-10">
+            <ShieldCheck className="h-10 w-10 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-100 mb-3">Have a certificate to verify?</h2>
+            <p className="text-slate-400 text-sm mb-6">Enter the certificate ID to instantly check its authenticity and view all credential details.</p>
+            <form action="/verify" method="GET" className="flex gap-2 max-w-sm mx-auto">
+              <input
+                name="id"
+                type="text"
+                placeholder="KTC-FSWDB-2026-1024"
+                className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 placeholder:text-slate-600"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-sm rounded-xl transition-colors shrink-0"
+              >
+                Verify
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800 py-8 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Award className="h-4 w-4 text-amber-400" />
+            <span className="text-sm text-slate-500">© 2026 Kode To Career. All rights reserved.</span>
+          </div>
+          <div className="flex gap-6 text-xs text-slate-600">
+            <a href="/login" className="hover:text-slate-400 transition-colors">Sign In</a>
+            <a href="/verify" className="hover:text-slate-400 transition-colors">Verify</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

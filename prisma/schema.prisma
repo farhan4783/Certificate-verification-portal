@@ -26,6 +26,17 @@ enum CourseStatus {
   ARCHIVED
 }
 
+enum BatchStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TemplateStatus {
+  ACTIVE
+  ARCHIVED
+}
+
 enum EmailStatus {
   PENDING
   SENT
@@ -50,19 +61,32 @@ enum AuditAction {
   VERIFY
 }
 
+enum AchievementType {
+  ACADEMIC
+  HACKATHON
+  COMPETITION
+  CERTIFICATION
+  OPEN_SOURCE
+  PUBLICATION
+  AWARD
+  OTHER
+}
+
 model Organization {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String
-  logo      String?   // Cloudinary URL
-  website   String?
-  email     String?
-  phone     String?
-  address   String?
-  createdAt DateTime  @default(now())
-  users     User[]
-  trainers  Trainer[]
-  students  Student[]
-  courses   Course[]
+  id           String               @id @default(uuid()) @db.Uuid
+  name         String
+  logo         String?              // Cloudinary URL
+  logoUrl      String?              // Cloudinary URL (alias)
+  website      String?
+  email        String?
+  phone        String?
+  address      String?
+  createdAt    DateTime             @default(now())
+  users        User[]
+  trainers     Trainer[]
+  students     Student[]
+  courses      Course[]
+  templates    CertificateTemplate[]
 }
 
 model User {
@@ -71,6 +95,7 @@ model User {
   email          String        @unique
   password       String        // bcrypt hash
   role           UserRole
+  avatar         String?       // Cloudinary URL
   organizationId String        @db.Uuid
   organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
   createdAt      DateTime      @default(now())
@@ -83,18 +108,24 @@ model User {
 }
 
 model Trainer {
-  id             String             @id @default(uuid()) @db.Uuid
-  userId         String             @unique @db.Uuid
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  designation    String?
-  bio            String?
-  photo          String?            // Cloudinary URL
-  signature      String?            // Cloudinary URL
-  organizationId String             @db.Uuid
-  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
-  courses        Course[]
-  certificates   Certificate[]
-  batches        CertificateBatch[]
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @db.Uuid
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  designation       String?
+  bio               String?
+  photo             String?            // Cloudinary URL
+  signature         String?            // Cloudinary URL
+  skills            String[]
+  yearsOfExperience Int?
+  linkedinUrl       String?
+  githubUrl         String?
+  website           String?
+  organizationId    String             @db.Uuid
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  courses           Course[]
+  certificates      Certificate[]
+  batches           CertificateBatch[]
+  students          Student[]  @relation("StudentTrainers")
 
   @@index([organizationId])
 }
@@ -106,9 +137,17 @@ model Student {
   enrollmentNumber String        @unique
   courseId         String        @db.Uuid
   course           Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  batchId          String?       @db.Uuid
+  batch            CertificateBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
   photo            String?       // Cloudinary URL
   organizationId   String        @db.Uuid
   organization     Organization  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  enrollmentDate   DateTime      @default(now())
+  completionDate   DateTime?
+  linkedinUrl      String?
+  githubUrl        String?
+  portfolioUrl     String?
+  trainer          Trainer[]     @relation("StudentTrainers")
   certificates     Certificate[]
   emailLogs        EmailLog[]
   projects         Project[]
@@ -121,10 +160,14 @@ model Student {
 model Course {
   id             String             @id @default(uuid()) @db.Uuid
   title          String
-  duration       String
+  code           String?            // e.g. FSWDB-001
+  subtitle       String?
+  duration       String?
   description    String?
   trainerId      String             @db.Uuid
   trainer        Trainer            @relation(fields: [trainerId], references: [id], onDelete: Restrict)
+  templateId     String?            @db.Uuid
+  template       CertificateTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   status         CourseStatus       @default(ACTIVE)
   organizationId String             @db.Uuid
   organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Restrict)
@@ -144,22 +187,30 @@ model CertificateBatch {
   courseId          String        @db.Uuid
   course            Course        @relation(fields: [courseId], references: [id], onDelete: Restrict)
   batchName         String
-  totalCertificates Int
+  status            BatchStatus   @default(ACTIVE)
+  totalCertificates Int           @default(0)
   createdAt         DateTime      @default(now())
   certificates      Certificate[]
+  students          Student[]
 
   @@index([trainerId, courseId])
 }
 
 model CertificateTemplate {
-  id              String        @id @default(uuid()) @db.Uuid
+  id              String         @id @default(uuid()) @db.Uuid
   name            String
-  backgroundImage String?       // Cloudinary URL
-  orientation     String        // "landscape" or "portrait"
+  backgroundImage String?        // Cloudinary URL
+  orientation     String         @default("landscape")
   font            String?
-  version         Int           @default(1)
-  active          Boolean       @default(true)
+  version         Int            @default(1)
+  active          Boolean        @default(true)
+  status          TemplateStatus @default(ACTIVE)
+  organizationId  String?        @db.Uuid
+  organization    Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  courses         Course[]
   certificates    Certificate[]
+
+  @@index([organizationId])
 }
 
 model Certificate {
@@ -171,16 +222,17 @@ model Certificate {
   trainer           Trainer             @relation(fields: [trainerId], references: [id], onDelete: Restrict)
   courseId          String              @db.Uuid
   course            Course              @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  templateId        String              @db.Uuid
-  template          CertificateTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  templateId        String?             @db.Uuid
+  template          CertificateTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   batchId           String?             @db.Uuid
   batch             CertificateBatch?   @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  issueDate         DateTime
+  issueDate         DateTime            @default(now())
   expiryDate        DateTime?
   pdfUrl            String?             // Cloudinary URL
   pdfHash           String?             // SHA-256 hash of PDF
   qrCode            String?             // Cloudinary URL or embedded data
   verificationToken String              @unique
+  grade             String?
   status            CertificateStatus   @default(DRAFT)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -240,35 +292,34 @@ model EmailLog {
 }
 
 model Project {
-  id             String    @id @default(uuid()) @db.Uuid
-  studentId      String    @db.Uuid
-  student        Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  title          String
-  description    String
-  technologies   String[]
-  githubUrl      String?
-  liveDemoUrl    String?
-  completionDate DateTime?
-  thumbnail      String?   // Cloudinary URL
-  featured       Boolean   @default(false)
-  createdAt      DateTime  @default(now())
+  id          String    @id @default(uuid()) @db.Uuid
+  studentId   String    @db.Uuid
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  techStack   String[]
+  projectUrl  String?   // live demo
+  githubUrl   String?
+  imageUrl    String?   // Cloudinary URL
+  isFeatured  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 
   @@index([studentId])
 }
 
 model Achievement {
-  id             String   @id @default(uuid()) @db.Uuid
-  studentId      String   @db.Uuid
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  title          String
-  description    String
-  issuer         String
-  date           DateTime
-  category       String   // Category representation
-  badgeIcon      String?  // Cloudinary URL or badge name
-  supportingLink String?
-  featured       Boolean  @default(false)
-  createdAt      DateTime @default(now())
+  id              String          @id @default(uuid()) @db.Uuid
+  studentId       String          @db.Uuid
+  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title           String
+  description     String?
+  issuer          String?
+  type            AchievementType @default(OTHER)
+  achievementDate DateTime?
+  credentialUrl   String?
+  imageUrl        String?
+  isFeatured      Boolean         @default(false)
+  createdAt       DateTime        @default(now())
 
   @@index([studentId])
 }
