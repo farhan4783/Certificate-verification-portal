@@ -126,7 +126,7 @@ export class CertificateService {
           studentId,
           trainerId,
           courseId,
-          templateId,
+          templateId: resolvedTemplateId || null,
           batchId: batchId || null,
           issueDate: issueDate || new Date(),
           expiryDate: expiryDate || null,
@@ -135,6 +135,7 @@ export class CertificateService {
           qrCode: qrUpload.url,
           verificationToken,
           status: CertificateStatus.ISSUED,
+          grade: input.grade || null,
         },
       });
 

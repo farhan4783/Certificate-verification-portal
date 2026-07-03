@@ -1,4 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import path from "path";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -16,11 +18,24 @@ export async function uploadToCloudinary(
       !process.env.CLOUDINARY_API_KEY ||
       !process.env.CLOUDINARY_API_SECRET
     ) {
-      console.warn("Cloudinary environment variables missing. Returning mock upload URL.");
+      console.warn("Cloudinary environment variables missing. Saving file locally.");
+      
+      const dirPath = path.join(process.cwd(), "public", "generated-certificates");
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+      }
+
+      const isPdf = fileUri.startsWith("data:application/pdf");
+      const ext = isPdf ? ".pdf" : ".png";
+      const filename = `mock-${folder}-${Date.now()}${ext}`;
+      const filePath = path.join(dirPath, filename);
+
+      const base64Data = fileUri.split(",")[1];
+      const buffer = Buffer.from(base64Data, "base64");
+      fs.writeFileSync(filePath, buffer);
+
       return {
-        url: fileUri.startsWith("data:application/pdf")
-          ? `https://res.cloudinary.com/demo/image/upload/v1620000000/mock-${folder}/${Date.now()}.pdf`
-          : `https://res.cloudinary.com/demo/image/upload/v1620000000/mock-${folder}/${Date.now()}.png`,
+        url: `/generated-certificates/${filename}`,
         publicId: `mock-public-id-${Date.now()}`,
       };
     }

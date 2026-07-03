@@ -3,6 +3,10 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 import bcrypt from "bcrypt";
 import "dotenv/config";
+import { generateQRCode } from "../lib/qr";
+import { generateCertificatePDF } from "../lib/pdf";
+import { uploadToCloudinary } from "../lib/cloudinary";
+import crypto from "crypto";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -85,20 +89,35 @@ async function main() {
   });
   console.log(`Created Trainer: ${trainerUser.name} (${trainer.id})`);
 
-  // 4. Create Course
+  // 4. Create Certificate Template
+  const template = await prisma.certificateTemplate.create({
+    data: {
+      name: "Default Landscape Certificate Template",
+      backgroundImage: "https://res.cloudinary.com/demo/image/upload/v1620000000/certificate-bg.png",
+      orientation: "landscape",
+      font: "Inter",
+      version: 1,
+      active: true,
+      organizationId: org.id,
+    },
+  });
+  console.log(`Created Template: ${template.name} (${template.id})`);
+
+  // 5. Create Course
   const course = await prisma.course.create({
     data: {
       title: "Full Stack Web Development Bootcamp",
       duration: "12 Weeks",
       description: "An intensive coding bootcamp covering HTML, CSS, JavaScript, React, Node.js, and PostgreSQL.",
       trainerId: trainer.id,
+      templateId: template.id,
       status: CourseStatus.ACTIVE,
       organizationId: org.id,
     },
   });
   console.log(`Created Course: ${course.title} (${course.id})`);
 
-  // 5. Create Student User & Profile
+  // 6. Create Student User & Profile (Jane Smith)
   const studentUser = await prisma.user.create({
     data: {
       name: "Jane Smith",
@@ -116,22 +135,33 @@ async function main() {
       courseId: course.id,
       photo: "https://res.cloudinary.com/demo/image/upload/v1620000000/student-photo.png",
       organizationId: org.id,
+      trainer: { connect: { id: trainer.id } },
     },
   });
   console.log(`Created Student: ${studentUser.name} (${student.id})`);
 
-  // 6. Create Certificate Template
-  const template = await prisma.certificateTemplate.create({
+  // Create a second student (Bob Johnson) who has no certificate yet
+  const studentUser2 = await prisma.user.create({
     data: {
-      name: "Default Landscape Certificate Template",
-      backgroundImage: "https://res.cloudinary.com/demo/image/upload/v1620000000/certificate-bg.png",
-      orientation: "landscape",
-      font: "Inter",
-      version: 1,
-      active: true,
+      name: "Bob Johnson",
+      email: "bob@kodetocareer.com",
+      password: studentPasswordHash,
+      role: UserRole.STUDENT,
+      organizationId: org.id,
     },
   });
-  console.log(`Created Template: ${template.name} (${template.id})`);
+
+  const student2 = await prisma.student.create({
+    data: {
+      userId: studentUser2.id,
+      enrollmentNumber: "KTC-2026-0002",
+      courseId: course.id,
+      photo: "https://res.cloudinary.com/demo/image/upload/v1620000000/student-photo.png",
+      organizationId: org.id,
+      trainer: { connect: { id: trainer.id } },
+    },
+  });
+  console.log(`Created Second Student: ${studentUser2.name} (${student2.id})`);
 
   // 7. Create Certificate Batch
   const batch = await prisma.certificateBatch.create({
@@ -139,12 +169,45 @@ async function main() {
       trainerId: trainer.id,
       courseId: course.id,
       batchName: "Full Stack Cohort 2026-A",
-      totalCertificates: 1,
+      totalCertificates: 2,
     },
   });
   console.log(`Created Batch: ${batch.batchName} (${batch.id})`);
 
   // 8. Create Sample Certificate
+  console.log("Generating assets for Sample Certificate KTC-BOOTCAMP-2026-0001...");
+  const verificationUrl = `http://localhost:3000/verify/KTC-BOOTCAMP-2026-0001`;
+  const qrCodeDataUrl = await generateQRCode(verificationUrl);
+
+  const formattedIssueDate = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const pdfBuffer = await generateCertificatePDF({
+    studentName: "Jane Smith",
+    courseTitle: course.title,
+    trainerName: "John Doe",
+    trainerDesignation: trainer.designation || undefined,
+    trainerSignatureUrl: trainer.signature || undefined,
+    orgLogoUrl: org.logo || undefined,
+    issueDate: formattedIssueDate,
+    certificateId: "KTC-BOOTCAMP-2026-0001",
+    qrCodeDataUrl,
+    verificationUrl,
+  });
+
+  const pdfHash = crypto.createHash("sha256").update(pdfBuffer).digest("hex");
+  const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+  
+  const pdfUpload = await uploadToCloudinary(pdfBase64, "certificates_pdf");
+  const qrUpload = await uploadToCloudinary(qrCodeDataUrl, "certificates_qr");
+
+  if (!pdfUpload || !qrUpload) {
+    throw new Error("Failed to generate and upload seed certificate assets");
+  }
+
   const certificate = await prisma.certificate.create({
     data: {
       certificateId: "KTC-BOOTCAMP-2026-0001",
@@ -156,9 +219,9 @@ async function main() {
       issueDate: new Date(),
       verificationToken: "ktcv_token_demo_9876543210_xyz",
       status: CertificateStatus.ISSUED,
-      pdfUrl: "https://res.cloudinary.com/demo/image/upload/v1620000000/sample-certificate.pdf",
-      pdfHash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", // SHA-256 for empty file as placeholder
-      qrCode: "https://res.cloudinary.com/demo/image/upload/v1620000000/sample-qr.png",
+      pdfUrl: pdfUpload.url,
+      pdfHash,
+      qrCode: qrUpload.url,
     },
   });
   console.log(`Created Sample Certificate: ${certificate.certificateId}`);
