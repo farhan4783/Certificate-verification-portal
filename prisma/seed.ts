@@ -1,7 +1,7 @@
 import { PrismaClient, UserRole, CertificateStatus, CourseStatus } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import "dotenv/config";
 import { generateQRCode } from "../lib/qr";
 import { generateCertificatePDF } from "../lib/pdf";
