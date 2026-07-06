@@ -17,7 +17,7 @@ export default async function AdminCertificatesPage() {
   });
 
   const statusStyle: Record<string, string> = {
-    DRAFT: "bg-slate-700/50 text-slate-300 border-slate-600",
+    DRAFT: "bg-amber-500/15 text-amber-400 border-amber-500/25 animate-pulse",
     GENERATED: "bg-blue-500/15 text-blue-400 border-blue-500/25",
     ISSUED: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
     REVOKED: "bg-rose-500/15 text-rose-400 border-rose-500/25",
@@ -55,7 +55,7 @@ export default async function AdminCertificatesPage() {
                   <td className="px-6 py-4 text-sm text-slate-400">{cert.trainer.user.name}</td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${statusStyle[cert.status] ?? ""}`}>
-                      {cert.status}
+                      {cert.status === "DRAFT" ? "GENERATING" : cert.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-300">{cert.verificationLogs.length}</td>

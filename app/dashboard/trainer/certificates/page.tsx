@@ -84,11 +84,11 @@ export default async function TrainerCertificatesPage() {
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
                           cert.status === "ISSUED" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" :
-                          cert.status === "DRAFT" ? "bg-slate-700/50 text-slate-300 border-slate-600" :
+                          cert.status === "DRAFT" ? "bg-amber-500/15 text-amber-400 border-amber-500/25 animate-pulse" :
                           cert.status === "REVOKED" ? "bg-rose-500/15 text-rose-400 border-rose-500/25" :
                           "bg-blue-500/15 text-blue-400 border-blue-500/25"
                         }`}>
-                          {cert.status}
+                          {cert.status === "DRAFT" ? "GENERATING" : cert.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">

@@ -1,27 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
-// Simple in-memory rate limiting map for local dev (key: IP, value: timestamp[])
-const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests per minute
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const timestamps = rateLimitMap.get(ip) || [];
-  
-  // Filter out timestamps outside the window
-  const activeTimestamps = timestamps.filter(ts => now - ts < RATE_LIMIT_WINDOW_MS);
-  
-  if (activeTimestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
-    return true;
-  }
-  
-  activeTimestamps.push(now);
-  rateLimitMap.set(ip, activeTimestamps);
-  return false;
-}
+// Global sliding rate limit configured via rate-limiter.ts
 
 export async function GET(
   request: Request,
@@ -32,7 +14,8 @@ export async function GET(
     const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
 
     // 1. Enforce rate limiting
-    if (isRateLimited(ipAddress)) {
+    const rateLimit = await checkRateLimit(`verify:${ipAddress}`, 30, 60);
+    if (!rateLimit.success) {
       return NextResponse.json(
         {
           success: false,

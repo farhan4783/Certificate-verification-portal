@@ -1,11 +1,8 @@
 import crypto from "crypto";
 import prisma from "@/lib/prisma";
 import { generateCertificateId, generateVerificationToken } from "@/lib/utils";
-import { generateQRCode } from "@/lib/qr";
-import { generateCertificatePDF } from "@/lib/pdf";
-import { uploadToCloudinary } from "@/lib/cloudinary";
-import { sendEmail } from "@/lib/resend";
-import { CertificateStatus, EmailStatus, AuditAction } from "@prisma/client";
+import { CertificateStatus } from "@prisma/client";
+import { enqueuePdfGeneration } from "@/lib/queue";
 
 interface IssueCertificateInput {
   studentId: string;
@@ -50,6 +47,18 @@ export class CertificateService {
       throw new Error(`Course with ID ${courseId} not found`);
     }
 
+    const existing = await prisma.certificate.findFirst({
+      where: {
+        studentId,
+        courseId,
+        status: { in: ["ISSUED", "DRAFT"] },
+      },
+    });
+
+    if (existing) {
+      throw new Error("Active certificate already exists for this student in this course");
+    }
+
     const trainer = await prisma.trainer.findUnique({
       where: { id: trainerId },
       include: { user: true },
@@ -79,54 +88,11 @@ export class CertificateService {
     const certificateId = generateCertificateId(course.title);
     const verificationToken = generateVerificationToken();
     
-    // 3. Define URLs
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const verificationUrl = `${appUrl}/verify/${certificateId}`;
-
-    // 4. Generate QR code (containing verification link)
-    const qrCodeDataUrl = await generateQRCode(verificationUrl);
-
-    // 5. Generate Landscape PDF Buffer
-    const formattedIssueDate = (issueDate || new Date()).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    const lang = language || "en";
-
-    const pdfBuffer = await generateCertificatePDF({
-      studentName: student.user.name,
-      courseTitle: course.title,
-      trainerName: trainer.user.name,
-      trainerDesignation: trainer.designation || undefined,
-      trainerSignatureUrl: trainer.signature || undefined,
-      orgLogoUrl: student.organization.logo || undefined,
-      issueDate: formattedIssueDate,
-      certificateId,
-      qrCodeDataUrl,
-      verificationUrl,
-      language: lang,
-    });
-
-    // 6. Compute SHA-256 PDF hash for integrity checking
-    const pdfHash = crypto.createHash("sha256").update(pdfBuffer).digest("hex");
-
-    // 7. Upload PDF and QR code to Cloudinary (in base64 format)
-    const pdfBase64 = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
-    const pdfUpload = await uploadToCloudinary(pdfBase64, "certificates_pdf");
-    
-    const qrUpload = await uploadToCloudinary(qrCodeDataUrl, "certificates_qr");
-
-    if (!pdfUpload || !qrUpload) {
-      throw new Error("Failed to upload certificate assets to Cloudinary");
-    }
-
-    // Generate mock blockchain Tx Hash and block number
+    // 3. Define placeholders for background processing
     const mockTxHash = "0x" + crypto.randomBytes(32).toString("hex");
     const mockBlock = Math.floor(12000000 + Math.random() * 8000000);
 
-    // 8. Write DB records inside a transaction
+    // 4. Write DB records inside a transaction with DRAFT status
     const finalCertificate = await prisma.$transaction(async (tx) => {
       const cert = await tx.certificate.create({
         data: {
@@ -138,15 +104,15 @@ export class CertificateService {
           batchId: batchId || null,
           issueDate: issueDate || new Date(),
           expiryDate: expiryDate || null,
-          pdfUrl: pdfUpload.url,
-          pdfHash,
-          qrCode: qrUpload.url,
+          pdfUrl: "", // populated in background
+          pdfHash: "", // populated in background
+          qrCode: "", // populated in background
           verificationToken,
-          status: CertificateStatus.ISSUED,
+          status: CertificateStatus.DRAFT,
           grade: input.grade || null,
           blockchainTxHash: mockTxHash,
           blockchainBlock: mockBlock,
-          language: lang,
+          language: language || "en",
         },
       });
 
@@ -164,56 +130,8 @@ export class CertificateService {
       return cert;
     });
 
-    // 9. Dispatch Email with Certificate details
-    const emailSubject = `Your Certificate for ${course.title} is ready!`;
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 8px;">
-        <h2 style="color: #0b1e44; text-align: center;">Congratulations, ${student.user.name}!</h2>
-        <p>You have successfully completed the course <strong>${course.title}</strong> at <strong>${student.organization.name}</strong>.</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" style="background-color: #d4af37; color: #0b1e44; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 4px; display: inline-block;">Verify Certificate</a>
-        </div>
-
-        <p>Your unique Certificate ID is: <code>${certificateId}</code></p>
-        <p>You can view and download the PDF of your certificate here: <a href="${pdfUpload.url}">${pdfUpload.url}</a></p>
-        
-        <p style="margin-top: 30px; font-size: 12px; color: #888;">
-          This is an automated message from Kode To Career. Every credential issued is secured and permanently verifiable.
-        </p>
-      </div>
-    `;
-
-    const emailSent = await sendEmail({
-      to: student.user.email,
-      subject: emailSubject,
-      html: emailHtml,
-    });
-
-    // 10. Record Email Log
-    try {
-      await prisma.emailLog.create({
-        data: {
-          studentId,
-          certificateId: finalCertificate.id,
-          status: emailSent.success ? EmailStatus.SENT : EmailStatus.FAILED,
-        },
-      });
-
-      if (emailSent.success) {
-        await prisma.auditLog.create({
-          data: {
-            userId: trainer.user.id,
-            action: "EMAIL",
-            table: "Certificate",
-            recordId: finalCertificate.id,
-            metadata: { emailSentTo: student.user.email },
-          },
-        });
-      }
-    } catch (logError) {
-      console.error("Failed to write email/audit log for email dispatch:", logError);
-    }
+    // 5. Enqueue background PDF and QR code generation task
+    enqueuePdfGeneration(finalCertificate.id);
 
     return finalCertificate;
   }

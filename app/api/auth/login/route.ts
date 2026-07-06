@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
-import { signToken, setSessionCookie } from "@/lib/auth";
+import { signToken, setSessionCookies, generateRefreshToken } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email format"),
@@ -11,6 +12,21 @@ const loginSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimit = await checkRateLimit(`login:${ipAddress}`, 5, 300);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many login attempts. Please try again in 5 minutes.",
+          },
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const result = loginSchema.safeParse(body);
 
@@ -72,8 +88,9 @@ export async function POST(request: Request) {
       organizationId: user.organizationId,
     };
     
-    const token = await signToken(payload);
-    await setSessionCookie(token);
+    const accessToken = await signToken(payload, "15m");
+    const refreshToken = await generateRefreshToken(user.id);
+    await setSessionCookies(accessToken, refreshToken);
 
     // Record Audit Log (optional, but requested in guidelines)
     try {

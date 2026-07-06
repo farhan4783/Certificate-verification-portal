@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 
         // Check if student is already issued a certificate for this course
         const existing = await prisma.certificate.findFirst({
-          where: { studentId: student.id, courseId, status: { in: ["ISSUED", "GENERATED"] } },
+          where: { studentId: student.id, courseId, status: { in: ["ISSUED", "GENERATED", "DRAFT"] } },
         });
 
         if (existing) {
