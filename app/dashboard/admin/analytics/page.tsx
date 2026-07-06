@@ -1,21 +1,15 @@
 import prisma from "@/lib/prisma";
+import GeoScanCharts from "@/components/dashboard/GeoScanCharts";
 
 export default async function AdminAnalyticsPage() {
   const [
     certificatesByStatus,
-    verificationsByDay,
     topCourses,
     topTrainers,
   ] = await Promise.all([
     prisma.certificate.groupBy({
       by: ["status"],
       _count: { status: true },
-    }),
-    prisma.verificationLog.groupBy({
-      by: ["verifiedAt"],
-      _count: { id: true },
-      orderBy: { verifiedAt: "desc" },
-      take: 7,
     }),
     prisma.course.findMany({
       take: 5,
@@ -41,9 +35,9 @@ export default async function AdminAnalyticsPage() {
         <p className="text-slate-400 text-sm mt-1">Platform metrics and performance insights</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Certificates by Status */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:col-span-1">
           <h2 className="text-sm font-semibold text-slate-200 mb-4">Certificates by Status</h2>
           <div className="space-y-3">
             {certificatesByStatus.map((item) => {
@@ -78,8 +72,8 @@ export default async function AdminAnalyticsPage() {
         </div>
 
         {/* Top Trainers */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-slate-200 mb-4">Top Trainers by Certificates</h2>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:col-span-1">
+          <h2 className="text-sm font-semibold text-slate-200 mb-4">Top Trainers</h2>
           <div className="space-y-3">
             {topTrainers.map((trainer, idx) => (
               <div key={trainer.id} className="flex items-center gap-3">
@@ -89,7 +83,7 @@ export default async function AdminAnalyticsPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-slate-200">{trainer.user.name}</p>
-                  <p className="text-xs text-slate-500">{trainer._count.courses} courses · {trainer._count.certificates} certs</p>
+                  <p className="text-xs text-slate-500 truncate">{trainer._count.courses} courses · {trainer._count.certificates} certs</p>
                 </div>
               </div>
             ))}
@@ -100,7 +94,7 @@ export default async function AdminAnalyticsPage() {
         </div>
 
         {/* Top Courses */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 md:col-span-1">
           <h2 className="text-sm font-semibold text-slate-200 mb-4">Most Popular Courses</h2>
           <div className="space-y-3">
             {topCourses.map((course, idx) => (
@@ -108,7 +102,7 @@ export default async function AdminAnalyticsPage() {
                 <span className="text-xs font-mono text-slate-500 w-4 mt-0.5">{idx + 1}</span>
                 <div className="flex-1">
                   <p className="text-sm text-slate-200 truncate">{course.title}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{course._count.students} students · {course._count.certificates} certificates</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{course._count.students} students · {course._count.certificates} certs</p>
                 </div>
               </div>
             ))}
@@ -117,24 +111,17 @@ export default async function AdminAnalyticsPage() {
             )}
           </div>
         </div>
+      </div>
 
-        {/* Recent Verifications */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-          <h2 className="text-sm font-semibold text-slate-200 mb-4">Recent Verification Activity</h2>
-          <div className="space-y-2">
-            {verificationsByDay.slice(0, 7).map((v) => (
-              <div key={v.verifiedAt.toISOString()} className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-mono">
-                  {v.verifiedAt.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                </span>
-                <span className="text-slate-300 font-medium">{v._count.id} verification{v._count.id !== 1 ? "s" : ""}</span>
-              </div>
-            ))}
-            {verificationsByDay.length === 0 && (
-              <p className="text-sm text-slate-500">No verification logs yet.</p>
-            )}
-          </div>
+      <div className="border-t border-slate-800/80 pt-8 mt-8">
+        <div className="mb-6">
+          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+            <span>🔍 Verification Scan Auditing & Geo-Tracking</span>
+            <span className="text-[9px] font-mono font-normal uppercase bg-violet-500/10 border border-violet-500/25 px-2 py-0.5 rounded text-violet-400 animate-pulse">Live</span>
+          </h2>
+          <p className="text-slate-400 text-xs mt-1">Real-time geolocation tracking, browser/device signatures, and scan timelines</p>
         </div>
+        <GeoScanCharts />
       </div>
     </div>
   );

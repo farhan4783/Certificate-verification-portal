@@ -3,6 +3,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck } from "lucide-react";
+import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 
 interface PageProps {
   params: Promise<{ certificateId: string }>;
@@ -202,16 +203,32 @@ export default async function VerifyPage({ params }: PageProps) {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 py-2">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Credential ID</span>
                     <span className="col-span-2 text-sm font-mono text-amber-400 select-all">{cert.certificateId}</span>
                   </div>
 
+                  <div className="grid grid-cols-3 gap-2 py-2">
+                    <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Language</span>
+                    <span className="col-span-2 text-sm font-semibold text-slate-200">
+                      {cert.language === "es" ? "Español (ES) 🇪🇸" : cert.language === "fr" ? "Français (FR) 🇫🇷" : "English (EN) 🇬🇧"}
+                    </span>
+                  </div>
+
                 </div>
+
+                {/* Blockchain Audit Anchor */}
+                <BlockchainAuditCard
+                  txHash={cert.blockchainTxHash}
+                  block={cert.blockchainBlock}
+                  pdfHash={cert.pdfHash}
+                  language={cert.language}
+                  issueDate={cert.issueDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                />
 
                 {/* Document View Action */}
                 {cert.pdfUrl && (
-                  <div className="pt-2">
+                  <div className="pt-4">
                     <a
                       href={cert.pdfUrl}
                       target="_blank"

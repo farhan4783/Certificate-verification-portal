@@ -11,10 +11,49 @@ interface PDFData {
   certificateId: string;
   qrCodeDataUrl: string;
   verificationUrl: string;
+  language?: string;
 }
+
+const translations: Record<string, {
+  title: string;
+  present: string;
+  completion: string;
+  issueDateLabel: string;
+  scanToVerify: string;
+  trainerDefault: string;
+}> = {
+  en: {
+    title: "CERTIFICATE OF COMPLETION",
+    present: "This credential is proudly presented to",
+    completion: "for successfully completing the course of study in",
+    issueDateLabel: "ISSUE DATE",
+    scanToVerify: "Scan to verify credential",
+    trainerDefault: "Trainer",
+  },
+  es: {
+    title: "CERTIFICADO DE FINALIZACIÓN",
+    present: "Esta credencial se presenta con orgullo a",
+    completion: "por completar con éxito el curso de estudio en",
+    issueDateLabel: "FECHA DE EMISIÓN",
+    scanToVerify: "Escanee para verificar credencial",
+    trainerDefault: "Instructor",
+  },
+  fr: {
+    title: "CERTIFICAT DE RÉUSSITE",
+    present: "Ce titre est fièrement présenté à",
+    completion: "pour avoir complété avec succès le cours d'études en",
+    issueDateLabel: "DATE D'ÉMISSION",
+    scanToVerify: "Scanner pour vérifier l'attestation",
+    trainerDefault: "Formateur",
+  },
+};
 
 export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
   try {
+    // Resolve language (default to English if unsupported)
+    const lang = data.language && translations[data.language] ? data.language : "en";
+    const t = translations[lang];
+
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
     
@@ -118,19 +157,19 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       });
     }
 
-    // 4. Certificate Title
-    const titleText = "CERTIFICATE OF COMPLETION";
-    const titleWidth = helveticaBold.widthOfTextAtSize(titleText, 28);
+    // 4. Certificate Title (Translated)
+    const titleText = t.title;
+    const titleWidth = helveticaBold.widthOfTextAtSize(titleText, 26);
     page.drawText(titleText, {
       x: width / 2 - titleWidth / 2,
       y: height - 140,
-      size: 28,
+      size: 26,
       font: helveticaBold,
       color: rgb(0.08, 0.18, 0.36),
     });
 
-    // 5. Presentational Text
-    const presentText = "This credential is proudly presented to";
+    // 5. Presentational Text (Translated)
+    const presentText = t.present;
     const presentWidth = timesItalic.widthOfTextAtSize(presentText, 16);
     page.drawText(presentText, {
       x: width / 2 - presentWidth / 2,
@@ -159,13 +198,13 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       thickness: 1.5,
     });
 
-    // 7. Completion Text
-    const completionText = `for successfully completing the course of study in`;
-    const completionWidth = helvetica.widthOfTextAtSize(completionText, 14);
+    // 7. Completion Text (Translated)
+    const completionText = t.completion;
+    const completionWidth = helvetica.widthOfTextAtSize(completionText, 13);
     page.drawText(completionText, {
       x: width / 2 - completionWidth / 2,
       y: height - 280,
-      size: 14,
+      size: 13,
       font: helvetica,
       color: rgb(0.35, 0.35, 0.35),
     });
@@ -234,7 +273,7 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       color: rgb(0.08, 0.18, 0.36),
     });
     
-    page.drawText(data.trainerDesignation || "Trainer", {
+    page.drawText(data.trainerDesignation || t.trainerDefault, {
       x: sigX,
       y: sigY - 32,
       size: 10,
@@ -242,7 +281,7 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       color: rgb(0.5, 0.5, 0.5),
     });
 
-    // 10. Footer: Center - Date of Issuance
+    // 10. Footer: Center - Date of Issuance (Translated Label)
     const dateX = width / 2 - 50;
     page.drawLine({
       start: { x: dateX, y: sigY - 5 },
@@ -250,15 +289,31 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       color: rgb(0.5, 0.5, 0.5),
       thickness: 1,
     });
-    page.drawText("ISSUE DATE", {
-      x: dateX + 18,
+    page.drawText(t.issueDateLabel, {
+      x: dateX + 10,
       y: sigY - 20,
       size: 10,
       font: helveticaBold,
       color: rgb(0.5, 0.5, 0.5),
     });
-    page.drawText(data.issueDate, {
-      x: dateX + 16,
+    
+    // Localize the actual date display representation slightly based on language
+    let localizedDateStr = data.issueDate;
+    try {
+      const parsedDate = new Date(data.issueDate);
+      if (!isNaN(parsedDate.getTime())) {
+        const localeMap: Record<string, string> = { en: "en-US", es: "es-ES", fr: "fr-FR" };
+        localizedDateStr = parsedDate.toLocaleDateString(localeMap[lang] || "en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+    } catch {}
+
+    const dateStrWidth = helvetica.widthOfTextAtSize(localizedDateStr, 10);
+    page.drawText(localizedDateStr, {
+      x: width / 2 - dateStrWidth / 2,
       y: sigY - 32,
       size: 10,
       font: helvetica,
@@ -291,8 +346,9 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
       color: rgb(0.35, 0.35, 0.35),
     });
 
-    // Draw small verification instructions
-    page.drawText("Scan to verify credential", {
+    // Draw small verification instructions (Translated)
+    const scanText = t.scanToVerify;
+    page.drawText(scanText, {
       x: qrX - 10,
       y: qrY - 22,
       size: 7,

@@ -1,0 +1,26 @@
+# Master Execution Tasks
+
+- [x] Rename and standardise Next.js middleware
+  - [x] Rename `proxy.ts` to `middleware.ts` (Attempted standard rename; confirmed custom Next.js build specifically requires and resolves `proxy.ts` as the middleware, so kept as `proxy.ts` to avoid build errors)
+- [x] Add Database fields for Blockchain Anchoring and Multi-Language
+  - [x] Add `blockchainTxHash`, `blockchainBlock`, and `language` to `Certificate` in `schema.prisma`
+  - [x] Run Prisma migrate/push to update the database
+- [x] Enhance Certificate Engine & PDF Generator
+  - [x] Update `lib/pdf.ts` to translate text based on the certificate's language (supporting EN, ES, FR)
+  - [x] Update `services/certificate.service.ts` to generate mock blockchain hash and block numbers
+  - [x] Update single certificate issuance forms with language and grade fields
+- [x] Implement Certificate Revocation Flow
+  - [x] Create API route `POST /api/certificates/revoke`
+  - [x] Add UI controls and confirm dialogs on the certificates table
+- [x] Implement CSV Bulk Issuance
+  - [x] Create API route `POST /api/certificates/bulk-issue`
+  - [x] Create drag-and-drop CSV upload modal in the trainer/admin certificates section
+- [x] Create Verification Geo-Tracking & Scan Analytics
+  - [x] Create API route `GET /api/analytics/verification-logs`
+  - [x] Add visual scan charts and device distribution widgets to the Admin Analytics dashboard
+- [x] Visual Polish & Premium Landing Page Upgrades
+  - [x] Add glowing radial shadows, custom fonts, animations, and hover scaling to landing page
+  - [x] Add inline Verification Widget to homepage with direct, slide-open verification results card
+- [x] Run Build Verification & Testing
+  - [x] Check client generation and build compile
+  - [x] Seed database and perform manual verification tests

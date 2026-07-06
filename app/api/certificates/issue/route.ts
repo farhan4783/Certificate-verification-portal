@@ -14,10 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json().catch(() => null) ?? await request.formData().then(async (fd) => ({
+        const body = await request.json().catch(() => null) ?? await request.formData().then(async (fd) => ({
       studentId: fd.get("studentId")?.toString() ?? "",
       courseId: fd.get("courseId")?.toString() ?? "",
       grade: fd.get("grade")?.toString() ?? undefined,
+      language: fd.get("language")?.toString() ?? "en",
     })).catch(() => null);
 
     if (!body || !body.studentId || !body.courseId) {
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
       courseId: body.courseId,
       trainerId,
       grade: body.grade,
+      language: body.language || "en",
     });
 
     return NextResponse.json({ success: true, data: { certificate: cert } }, { status: 201 });

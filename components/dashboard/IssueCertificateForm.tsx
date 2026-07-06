@@ -37,12 +37,13 @@ export default function IssueCertificateForm({ eligibleStudents, courses }: Prop
     const studentId = (form.elements.namedItem("studentId") as HTMLSelectElement).value;
     const courseId = (form.elements.namedItem("courseId") as HTMLSelectElement).value;
     const grade = (form.elements.namedItem("grade") as HTMLInputElement).value;
+    const language = (form.elements.namedItem("language") as HTMLSelectElement).value;
 
     try {
       const res = await fetch("/api/certificates/issue", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentId, courseId, grade }),
+        body: JSON.stringify({ studentId, courseId, grade, language }),
       });
 
       const data = await res.json();
@@ -111,14 +112,29 @@ export default function IssueCertificateForm({ eligibleStudents, courses }: Prop
           </select>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5">Grade / Score (optional)</label>
-          <input
-            name="grade"
-            type="text"
-            placeholder="e.g. A, 95%, Distinction"
-            className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2.5 focus:outline-none focus:border-violet-500 placeholder:text-slate-600 transition-colors"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Grade / Score (optional)</label>
+            <input
+              name="grade"
+              type="text"
+              placeholder="e.g. A, 95%"
+              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 placeholder:text-slate-650 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">Language</label>
+            <select
+              name="language"
+              required
+              className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-violet-500 transition-colors"
+            >
+              <option value="en">English (EN)</option>
+              <option value="es">Español (ES)</option>
+              <option value="fr">Français (FR)</option>
+            </select>
+          </div>
         </div>
 
         <button

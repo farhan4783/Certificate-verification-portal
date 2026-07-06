@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import DeleteButton from "@/components/dashboard/DeleteButton";
+import RevokeButton from "@/components/dashboard/RevokeButton";
 
 
 export default async function AdminCertificatesPage() {
@@ -82,6 +83,9 @@ export default async function AdminCertificatesPage() {
                           />
                         </svg>
                       </Link>
+                      {cert.status !== "REVOKED" && (
+                        <RevokeButton id={cert.id} certificateId={cert.certificateId} />
+                      )}
                       <DeleteButton
                         id={cert.id}
                         endpoint="/api/certificates"

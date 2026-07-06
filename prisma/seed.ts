@@ -222,6 +222,9 @@ async function main() {
       pdfUrl: pdfUpload.url,
       pdfHash,
       qrCode: qrUpload.url,
+      blockchainTxHash: "0x3f5c9e2b1d7f6a8e0c9b1d7f6a8e0c9b1d7f6a8e0c9b1d7f6a8e0c9b1d7f6a8e",
+      blockchainBlock: 12040982,
+      language: "en",
     },
   });
   console.log(`Created Sample Certificate: ${certificate.certificateId}`);

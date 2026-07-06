@@ -16,6 +16,7 @@ interface IssueCertificateInput {
   grade?: string;
   issueDate?: Date;
   expiryDate?: Date;
+  language?: string;
 }
 
 /** Standalone convenience wrapper around CertificateService.issueCertificate */
@@ -29,7 +30,7 @@ export class CertificateService {
    * stores metadata in DB, and dispatches an email to the student.
    */
   static async issueCertificate(input: IssueCertificateInput) {
-    const { studentId, courseId, trainerId, templateId, batchId, issueDate, expiryDate } = input;
+    const { studentId, courseId, trainerId, templateId, batchId, issueDate, expiryDate, language } = input;
 
     // 1. Fetch relations and details
     const student = await prisma.student.findUnique({
@@ -92,6 +93,8 @@ export class CertificateService {
       day: "numeric",
     });
 
+    const lang = language || "en";
+
     const pdfBuffer = await generateCertificatePDF({
       studentName: student.user.name,
       courseTitle: course.title,
@@ -103,6 +106,7 @@ export class CertificateService {
       certificateId,
       qrCodeDataUrl,
       verificationUrl,
+      language: lang,
     });
 
     // 6. Compute SHA-256 PDF hash for integrity checking
@@ -117,6 +121,10 @@ export class CertificateService {
     if (!pdfUpload || !qrUpload) {
       throw new Error("Failed to upload certificate assets to Cloudinary");
     }
+
+    // Generate mock blockchain Tx Hash and block number
+    const mockTxHash = "0x" + crypto.randomBytes(32).toString("hex");
+    const mockBlock = Math.floor(12000000 + Math.random() * 8000000);
 
     // 8. Write DB records inside a transaction
     const finalCertificate = await prisma.$transaction(async (tx) => {
@@ -136,6 +144,9 @@ export class CertificateService {
           verificationToken,
           status: CertificateStatus.ISSUED,
           grade: input.grade || null,
+          blockchainTxHash: mockTxHash,
+          blockchainBlock: mockBlock,
+          language: lang,
         },
       });
 

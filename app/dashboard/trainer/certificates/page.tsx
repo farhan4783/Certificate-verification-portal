@@ -1,7 +1,8 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
-import IssueCertificateForm from "@/components/dashboard/IssueCertificateForm";
+import TrainerIssuanceTabs from "@/components/dashboard/TrainerIssuanceTabs";
+import RevokeButton from "@/components/dashboard/RevokeButton";
 
 export default async function TrainerCertificatesPage() {
   const session = await getSession();
@@ -49,9 +50,9 @@ export default async function TrainerCertificatesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Issue Form */}
+        {/* Issue Form Tabs */}
         <div className="lg:col-span-1">
-          <IssueCertificateForm
+          <TrainerIssuanceTabs
             eligibleStudents={eligibleStudents}
             courses={trainer?.courses ?? []}
           />
@@ -71,6 +72,7 @@ export default async function TrainerCertificatesPage() {
                     <th className="px-6 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-slate-500">Student</th>
                     <th className="px-6 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-slate-500">Course</th>
                     <th className="px-6 py-3 text-left text-[11px] font-mono uppercase tracking-widest text-slate-500">Status</th>
+                    <th className="px-6 py-3 text-right text-[11px] font-mono uppercase tracking-widest text-slate-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
@@ -83,10 +85,16 @@ export default async function TrainerCertificatesPage() {
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${
                           cert.status === "ISSUED" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25" :
                           cert.status === "DRAFT" ? "bg-slate-700/50 text-slate-300 border-slate-600" :
-                          "bg-rose-500/15 text-rose-400 border-rose-500/25"
+                          cert.status === "REVOKED" ? "bg-rose-500/15 text-rose-400 border-rose-500/25" :
+                          "bg-blue-500/15 text-blue-400 border-blue-500/25"
                         }`}>
                           {cert.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {cert.status !== "REVOKED" && (
+                          <RevokeButton id={cert.id} certificateId={cert.certificateId} />
+                        )}
                       </td>
                     </tr>
                   ))}

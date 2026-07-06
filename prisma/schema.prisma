@@ -234,6 +234,9 @@ model Certificate {
   verificationToken String              @unique
   grade             String?
   status            CertificateStatus   @default(DRAFT)
+  blockchainTxHash  String?
+  blockchainBlock   Int?
+  language          String              @default("en")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   verificationLogs  VerificationLog[]

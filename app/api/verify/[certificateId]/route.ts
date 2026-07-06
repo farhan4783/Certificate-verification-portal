@@ -182,7 +182,10 @@ export async function GET(
               })
             : null,
           status: cert.status,
-          pdfUrl: cert.pdfUrl, // returned for verification preview (gated downloads still enforced at download route)
+          pdfUrl: cert.pdfUrl,
+          blockchainTxHash: cert.blockchainTxHash,
+          blockchainBlock: cert.blockchainBlock,
+          language: cert.language,
         },
       },
     });
