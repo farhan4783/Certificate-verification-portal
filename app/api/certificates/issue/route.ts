@@ -2,9 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { issueCertificate } from "@/services/certificate.service";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function POST(request: NextRequest) {
   try {
+    const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimit = await checkRateLimit(`cert-issue:${ipAddress}`, 30, 60);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: { code: "TOO_MANY_REQUESTS", message: "Too many issuance attempts. Please wait a minute." } },
+        { status: 429 }
+      );
+    }
+
     const session = await getSession();
 
     if (!session) {

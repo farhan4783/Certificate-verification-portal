@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
-import { signToken, setSessionCookies, generateRefreshToken } from "@/lib/auth";
+import { signToken, setSessionCookies, generateRefreshToken, hashUserAgent } from "@/lib/auth";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
 const loginSchema = z.object({
@@ -80,12 +80,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const userAgent = request.headers.get("user-agent") || "";
+    const fingerprint = hashUserAgent(userAgent);
+
     // Sign JWT Token
     const payload = {
       id: user.id,
       email: user.email,
       role: user.role,
       organizationId: user.organizationId,
+      userFingerprint: fingerprint,
     };
     
     const accessToken = await signToken(payload, "15m");

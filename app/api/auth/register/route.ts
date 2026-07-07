@@ -3,6 +3,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -19,6 +20,21 @@ const registerSchema = z.object({
 
 export async function POST(request: Request) {
   try {
+    const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimit = await checkRateLimit(`register:${ipAddress}`, 5, 900);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "TOO_MANY_REQUESTS",
+            message: "Too many registration attempts. Please try again in 15 minutes.",
+          },
+        },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const result = registerSchema.safeParse(body);
 

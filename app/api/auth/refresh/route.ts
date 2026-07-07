@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { signToken, generateRefreshToken } from "@/lib/auth";
+import { signToken, generateRefreshToken, hashUserAgent } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -45,11 +45,15 @@ export async function POST(request: Request) {
     await prisma.refreshToken.delete({ where: { id: dbToken.id } }).catch(() => {});
     const newRefreshToken = await generateRefreshToken(dbToken.userId);
 
+    const userAgent = request.headers.get("user-agent") || "";
+    const fingerprint = hashUserAgent(userAgent);
+
     const payload = {
       id: dbToken.user.id,
       email: dbToken.user.email,
       role: dbToken.user.role,
       organizationId: dbToken.user.organizationId,
+      userFingerprint: fingerprint,
     };
 
     // Sign new access token

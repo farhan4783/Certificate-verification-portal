@@ -8,6 +8,55 @@ const JWT_SECRET = new TextEncoder().encode(
 const SESSION_COOKIE_NAME = "ktc_session";
 const REFRESH_COOKIE_NAME = "ktc_refresh";
 
+async function hashUserAgent(userAgent: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(userAgent || "");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function checkCsrf(request: NextRequest, pathname: string): boolean {
+  const method = request.method;
+  const isMutation = ["POST", "PUT", "DELETE", "PATCH"].includes(method);
+  if (!isMutation) return true;
+
+  // Exempt public mutation routes
+  if (pathname === "/api/verify/offline" || pathname === "/api/auth/login") {
+    return true;
+  }
+
+  const origin = request.headers.get("origin");
+  const referer = request.headers.get("referer");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  let appHost = "";
+  try {
+    appHost = new URL(appUrl).host;
+  } catch (e) {
+    appHost = "localhost:3000";
+  }
+
+  if (origin) {
+    try {
+      const originHost = new URL(origin).host;
+      if (originHost !== appHost) return false;
+    } catch (e) {
+      return false;
+    }
+  } else if (referer) {
+    try {
+      const refererHost = new URL(referer).host;
+      if (refererHost !== appHost) return false;
+    } catch (e) {
+      return false;
+    }
+  } else {
+    return false; // Reject mutations with missing origin/referer
+  }
+
+  return true;
+}
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -16,6 +65,22 @@ export default async function proxy(request: NextRequest) {
   const isVerificationApiRoute = pathname.startsWith("/api/verify");
   const isRefreshApiRoute = pathname === "/api/auth/refresh";
 
+  // CSRF Protection
+  if (!checkCsrf(request, pathname)) {
+    const res = NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "CSRF_ERROR",
+          message: "Action forbidden: CSRF validation failed",
+        },
+      },
+      { status: 403 }
+    );
+    injectSecurityHeaders(res);
+    return res;
+  }
+
   // Get session cookie
   const cookie = request.cookies.get(SESSION_COOKIE_NAME);
   const token = cookie?.value;
@@ -23,12 +88,21 @@ export default async function proxy(request: NextRequest) {
   let session: any = null;
   let newCookiesToSet: string[] = [];
 
+  const userAgent = request.headers.get("user-agent") || "";
+  const currentFingerprint = await hashUserAgent(userAgent);
+
   if (token) {
     try {
       const { payload } = await jose.jwtVerify(token, JWT_SECRET);
+      
+      // Fingerprint Pinning Check
+      if (payload.userFingerprint && payload.userFingerprint !== currentFingerprint) {
+        throw new Error("Session fingerprint mismatch");
+      }
+      
       session = payload;
     } catch (e) {
-      // Access token expired, attempt refresh rotation
+      // Access token expired or fingerprint mismatch, attempt refresh rotation
     }
   }
 
@@ -41,6 +115,7 @@ export default async function proxy(request: NextRequest) {
           method: "POST",
           headers: {
             cookie: `${SESSION_COOKIE_NAME}=${token || ""}; ${REFRESH_COOKIE_NAME}=${refreshCookie.value}`,
+            "user-agent": userAgent, // Forward user agent for verification
           },
         });
 
@@ -53,7 +128,11 @@ export default async function proxy(request: NextRequest) {
               const match = accessCookieStr.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`));
               if (match && match[1]) {
                 const { payload } = await jose.jwtVerify(match[1], JWT_SECRET);
-                session = payload;
+                
+                // Double check fingerprint on newly rotated token
+                if (!payload.userFingerprint || payload.userFingerprint === currentFingerprint) {
+                  session = payload;
+                }
               }
             }
           }
@@ -142,7 +221,23 @@ export default async function proxy(request: NextRequest) {
     });
   }
 
+  injectSecurityHeaders(response);
   return response;
+}
+
+function injectSecurityHeaders(response: NextResponse) {
+  const securityHeaders = {
+    "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: res.cloudinary.com *.cloudinary.com; font-src 'self' data:; connect-src 'self' wss://polygon-rpc.com; frame-ancestors 'none';",
+    "X-Frame-Options": "DENY",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+  };
+
+  Object.entries(securityHeaders).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
 }
 
 function redirectToCorrectDashboard(role: string, baseUrl: string) {
@@ -154,7 +249,9 @@ function redirectToCorrectDashboard(role: string, baseUrl: string) {
   } else if (role === "STUDENT") {
     dashboardPath = "/dashboard/student";
   }
-  return NextResponse.redirect(new URL(dashboardPath, baseUrl));
+  const res = NextResponse.redirect(new URL(dashboardPath, baseUrl));
+  injectSecurityHeaders(res);
+  return res;
 }
 
 export const config = {

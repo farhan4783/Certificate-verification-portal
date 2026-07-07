@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function DELETE(request: NextRequest) {
   try {
+    const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimit = await checkRateLimit(`cert-delete:${ipAddress}`, 30, 60);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: { code: "TOO_MANY_REQUESTS", message: "Too many delete attempts. Please wait a minute." } },
+        { status: 429 }
+      );
+    }
+
     const session = await getSession();
     if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "TRAINER")) {
       return NextResponse.json(
@@ -81,6 +91,15 @@ export async function DELETE(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
+    const rateLimit = await checkRateLimit(`cert-update:${ipAddress}`, 30, 60);
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { success: false, error: { code: "TOO_MANY_REQUESTS", message: "Too many update attempts. Please wait a minute." } },
+        { status: 429 }
+      );
+    }
+
     const session = await getSession();
     if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "TRAINER")) {
       return NextResponse.json(

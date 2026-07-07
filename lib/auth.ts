@@ -14,6 +14,11 @@ export interface JWTPayload {
   email: string;
   role: string;
   organizationId: string;
+  userFingerprint?: string; // Hashed User-Agent
+}
+
+export function hashUserAgent(userAgent: string): string {
+  return crypto.createHash("sha256").update(userAgent || "").digest("hex");
 }
 
 export async function signToken(payload: JWTPayload, expiresIn: string = "15m"): Promise<string> {
@@ -24,10 +29,18 @@ export async function signToken(payload: JWTPayload, expiresIn: string = "15m"):
     .sign(JWT_SECRET);
 }
 
-export async function verifyToken(token: string): Promise<JWTPayload | null> {
+export async function verifyToken(token: string, currentFingerprint?: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jose.jwtVerify(token, JWT_SECRET);
-    return payload as unknown as JWTPayload;
+    const jwtPayload = payload as unknown as JWTPayload;
+
+    if (currentFingerprint && jwtPayload.userFingerprint) {
+      if (jwtPayload.userFingerprint !== currentFingerprint) {
+        return null; // User-Agent fingerprint mismatch
+      }
+    }
+
+    return jwtPayload;
   } catch (error) {
     return null;
   }
@@ -101,5 +114,15 @@ export async function getSession(): Promise<JWTPayload | null> {
   if (!cookie || !cookie.value) {
     return null;
   }
-  return verifyToken(cookie.value);
+
+  try {
+    const { headers } = await import("next/headers");
+    const headersList = await headers();
+    const userAgent = headersList.get("user-agent") || "";
+    const fingerprint = hashUserAgent(userAgent);
+    return verifyToken(cookie.value, fingerprint);
+  } catch (e) {
+    // If headers() is called outside request context (e.g. in some server build steps)
+    return verifyToken(cookie.value);
+  }
 }
