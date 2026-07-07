@@ -160,6 +160,8 @@ export default async function StudentOverviewPage() {
           { href: "/dashboard/student/portfolio", label: "Add Projects", icon: "💡" },
           { href: "/dashboard/student/achievements", label: "Achievements", icon: "🏆" },
           { href: "/dashboard/student/profile", label: "View Profile", icon: "👤" },
+          { href: `/api/students/${student.id}/id-card`, label: "My ID Card", icon: "🪪" },
+          { href: `/profile/${student.enrollmentNumber}`, label: "Public Portfolio", icon: "🌐" },
         ].map((link) => (
           <a
             key={link.href}

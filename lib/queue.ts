@@ -3,6 +3,7 @@ import prisma from "./prisma";
 import { generateCertificatePDF } from "./pdf";
 import { generateQRCode } from "./qr";
 import { uploadToCloudinary } from "./cloudinary";
+import { signCertificatePayload } from "./crypto-sign";
 import crypto from "crypto";
 import logger from "./logger";
 import { Resend } from "resend";
@@ -33,8 +34,24 @@ async function processPdfGeneration(certificateId: string) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const verificationUrl = `${appUrl}/verify/${cert.certificateId}`;
 
-    // 1. Generate QR Code containing the public verification link
-    const qrCodeDataUrl = await generateQRCode(verificationUrl);
+    // 1. Generate QR Code containing the public verification link + offline signature
+    const signedPayload = signCertificatePayload({
+      certificateId: cert.certificateId,
+      studentName: cert.student.user.name,
+      courseTitle: cert.course.title,
+      issueDate: cert.issueDate.toISOString(),
+    });
+
+    // QR code embeds: verification URL + Ed25519 signature for offline mode
+    const qrPayload = JSON.stringify({
+      url: verificationUrl,
+      sig: signedPayload,
+      id: cert.certificateId,
+      name: cert.student.user.name,
+      course: cert.course.title,
+      issued: cert.issueDate.toISOString(),
+    });
+    const qrCodeDataUrl = await generateQRCode(qrPayload);
     let qrCodeUrl = "";
     if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) {
       try {

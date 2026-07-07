@@ -16,6 +16,9 @@ const envSchema = z.object({
   
   // Redis configuration (used for global queues/rate-limiting, fallback locally)
   REDIS_URL: z.string().optional(),
+  
+  // Ed25519 signing key for offline cryptographic verification (optional, derives from JWT_SECRET if missing)
+  SIGNING_PRIVATE_KEY: z.string().optional(),
 });
 
 function validateEnv() {

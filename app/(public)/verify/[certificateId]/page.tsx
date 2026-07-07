@@ -4,6 +4,53 @@ import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck } from "lucide-react";
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
+import SocialShareBar from "@/components/dashboard/SocialShareBar";
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+export async function generateMetadata({ params }: PageProps) {
+  const { certificateId } = await params;
+
+  const cert = await prisma.certificate.findFirst({
+    where: {
+      OR: [
+        { certificateId: certificateId },
+        { verificationToken: certificateId },
+      ],
+    },
+    include: {
+      student: { include: { user: { select: { name: true } }, organization: { select: { name: true } } } },
+      course: { select: { title: true } },
+    },
+  });
+
+  if (!cert) {
+    return { title: "Invalid Credential – KodeToCareer" };
+  }
+
+  const title = `${cert.student.user.name} – ${cert.course.title} | Verified Credential`;
+  const description = `Verified credential for ${cert.student.user.name} in ${cert.course.title}, issued by ${cert.student.organization.name}. Secured with SHA-256 hashing and Ed25519 digital signatures.`;
+  const ogImageUrl = `${appUrl}/api/verify/${cert.certificateId}/og-image`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${appUrl}/verify/${cert.certificateId}`,
+      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+      type: "article",
+      siteName: "KodeToCareer",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+  };
+}
 
 interface PageProps {
   params: Promise<{ certificateId: string }>;
@@ -227,6 +274,15 @@ export default async function VerifyPage({ params }: PageProps) {
                 />
 
                 {/* Document View Action */}
+                {/* Social Sharing */}
+                <SocialShareBar
+                  certificateId={cert.certificateId}
+                  studentName={cert.student.user.name}
+                  courseTitle={cert.course.title}
+                  organizationName={cert.student.organization.name}
+                  verifyUrl={`${appUrl}/verify/${cert.certificateId}`}
+                />
+
                 {cert.pdfUrl && (
                   <div className="pt-4">
                     <a

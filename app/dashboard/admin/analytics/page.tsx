@@ -1,5 +1,6 @@
 import prisma from "@/lib/prisma";
 import GeoScanCharts from "@/components/dashboard/GeoScanCharts";
+import SecurityAlertsPanel from "@/components/dashboard/SecurityAlertsPanel";
 
 export default async function AdminAnalyticsPage() {
   const [
@@ -111,6 +112,11 @@ export default async function AdminAnalyticsPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Security & Anomaly Detection */}
+      <div className="border-t border-slate-800/80 pt-8 mt-8">
+        <SecurityAlertsPanel />
       </div>
 
       <div className="border-t border-slate-800/80 pt-8 mt-8">
