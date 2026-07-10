@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
 import { checkRateLimit } from "@/lib/rate-limiter";
+import { after } from "next/server";
 
 // Global sliding rate limit configured via rate-limiter.ts
 
@@ -110,22 +111,24 @@ export async function GET(
       result = "INVALID";
     }
 
-    // 6. Log attempt in VerificationLog
-    try {
-      await prisma.verificationLog.create({
-        data: {
-          certificateId: cert.id,
-          result,
-          ipAddress,
-          device,
-          userAgent,
-          referrer,
-          country,
-        },
-      });
-    } catch (logError) {
-      console.error("Failed to save verification log:", logError);
-    }
+    // 6. Log attempt in VerificationLog asynchronously using after()
+    after(async () => {
+      try {
+        await prisma.verificationLog.create({
+          data: {
+            certificateId: cert.id,
+            result,
+            ipAddress,
+            device,
+            userAgent,
+            referrer,
+            country,
+          },
+        });
+      } catch (logError) {
+        console.error("Failed to save verification log in after():", logError);
+      }
+    });
 
     // 7. Return payload scoped to public requirements (never leak sensitive fields)
     if (result !== "VALID") {

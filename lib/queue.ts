@@ -106,17 +106,23 @@ async function processPdfGeneration(certificateId: string) {
     }
 
     if (!pdfUrl) {
-      // Local development mock fallback
-      const fs = require("fs");
-      const path = require("path");
-      const localDir = path.join(process.cwd(), "public", "uploads", "certs");
-      if (!fs.existsSync(localDir)) {
-        fs.mkdirSync(localDir, { recursive: true });
+      try {
+        // Local development mock fallback
+        const fs = require("fs");
+        const path = require("path");
+        const localDir = path.join(process.cwd(), "public", "uploads", "certs");
+        if (!fs.existsSync(localDir)) {
+          fs.mkdirSync(localDir, { recursive: true });
+        }
+        const localPath = path.join(localDir, `${cert.certificateId}.pdf`);
+        fs.writeFileSync(localPath, pdfBuffer);
+        pdfUrl = `/uploads/certs/${cert.certificateId}.pdf`;
+        logger.info(`Saved certificate PDF locally at: ${pdfUrl}`);
+      } catch (fsError) {
+        logger.error(`Failed to save PDF locally (likely read-only filesystem on Vercel):`, fsError);
+        // Fallback: use inline Data URL for PDF if Cloudinary is missing on Vercel
+        pdfUrl = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
       }
-      const localPath = path.join(localDir, `${cert.certificateId}.pdf`);
-      fs.writeFileSync(localPath, pdfBuffer);
-      pdfUrl = `/uploads/certs/${cert.certificateId}.pdf`;
-      logger.info(`Saved certificate PDF locally at: ${pdfUrl}`);
     }
 
     // 5. Update database status to ISSUED

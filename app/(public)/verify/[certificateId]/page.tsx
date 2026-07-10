@@ -5,6 +5,7 @@ import { VerificationResult } from "@prisma/client";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck } from "lucide-react";
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
+import { after } from "next/server";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -100,31 +101,41 @@ export default async function VerifyPage({ params }: PageProps) {
     }
   }
 
-  // 2. Log verification attempt (if certificate exists)
+  // 2. Log verification attempt (if certificate exists and not a prefetch request)
   if (cert) {
     try {
-      // In Server Components we don't have direct access to request headers/IP easily
-      // unless we import headers from next/headers. Let's do that!
       const { headers } = await import("next/headers");
       const headersList = await headers();
-      const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
-      const userAgent = headersList.get("user-agent") || "unknown";
-      const referrer = headersList.get("referer") || "unknown";
-      const country = headersList.get("x-vercel-ip-country") || "local";
-      const isMobile = /mobile/i.test(userAgent);
-      const device = isMobile ? "Mobile" : "Desktop";
+      
+      const purpose = headersList.get("purpose") || headersList.get("x-purpose") || "";
+      const isPrefetch = purpose === "prefetch" || headersList.get("x-middleware-prefetch") === "1";
 
-      await prisma.verificationLog.create({
-        data: {
-          certificateId: cert.id,
-          result,
-          ipAddress,
-          device,
-          userAgent,
-          referrer,
-          country,
-        },
-      });
+      if (!isPrefetch) {
+        const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
+        const userAgent = headersList.get("user-agent") || "unknown";
+        const referrer = headersList.get("referer") || "unknown";
+        const country = headersList.get("x-vercel-ip-country") || "local";
+        const isMobile = /mobile/i.test(userAgent);
+        const device = isMobile ? "Mobile" : "Desktop";
+
+        after(async () => {
+          try {
+            await prisma.verificationLog.create({
+              data: {
+                certificateId: cert.id,
+                result,
+                ipAddress,
+                device,
+                userAgent,
+                referrer,
+                country,
+              },
+            });
+          } catch (logError) {
+            console.error("Failed to save verification log in after():", logError);
+          }
+        });
+      }
     } catch (logError) {
       console.error("Failed to log verification page view:", logError);
     }

@@ -16,6 +16,7 @@ const isExternalDb = connectionString?.includes("supabase.co") || connectionStri
 const poolConfig = {
   connectionString,
   ssl: isExternalDb ? { rejectUnauthorized: false } : undefined,
+  max: process.env.NODE_ENV === "production" ? 2 : 10, // Cap pool size in serverless environments
 };
 
 if (process.env.NODE_ENV === "production") {

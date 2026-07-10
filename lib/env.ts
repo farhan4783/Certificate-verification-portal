@@ -27,8 +27,11 @@ function validateEnv() {
   if (!result.success) {
     console.error("❌ Environment validation failed on startup:");
     console.error(JSON.stringify(result.error.format(), null, 2));
-    if (process.env.NODE_ENV === "production") {
+    const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
+    if (process.env.NODE_ENV === "production" && !isBuildPhase) {
       throw new Error("Strict environment validation failed. Process exiting.");
+    } else if (isBuildPhase) {
+      console.warn("⚠️ Environment validation failed during build time. Bypassing crash to allow static generation.");
     }
   }
 
