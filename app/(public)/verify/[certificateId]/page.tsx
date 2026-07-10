@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
-import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck, Cpu } from "lucide-react";
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
 import { after } from "next/server";
@@ -81,6 +81,7 @@ export default async function VerifyPage({ params }: PageProps) {
           user: { select: { name: true } },
         },
       },
+      web3Credential: true,
     },
   });
 
@@ -274,6 +275,59 @@ export default async function VerifyPage({ params }: PageProps) {
                   </div>
 
                 </div>
+
+                {/* Web3 Credential (NFT) Details */}
+                {cert.web3Credential && (
+                  <div className="border border-cyan-800/80 bg-cyan-950/10 rounded-xl p-5 shadow-lg shadow-cyan-500/5 mb-6">
+                    <div className="flex items-start gap-3">
+                      <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5 animate-pulse">
+                        <Cpu className="h-4.5 w-4.5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Soulbound Token Credential</h3>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                            ERC-721
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                          This certificate has been minted as an on-chain non-transferable Soulbound NFT, verifying ownership and registry directly against the public blockchain contract.
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-[10px] font-mono">
+                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850 truncate">
+                            <span className="text-slate-500 block mb-0.5">CONTRACT ADDRESS</span>
+                            <a
+                              href={`https://polygonscan.com/address/${cert.web3Credential.contractAddress}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-cyan-400 hover:text-cyan-300 select-all"
+                            >
+                              {cert.web3Credential.contractAddress}
+                            </a>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850">
+                            <span className="text-slate-500 block mb-0.5">TOKEN ID / NETWORK</span>
+                            <span className="text-slate-200">
+                              #{cert.web3Credential.tokenId} ({cert.web3Credential.networkName})
+                            </span>
+                          </div>
+                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850 sm:col-span-2 truncate">
+                            <span className="text-slate-500 block mb-0.5">OWNER WALLET</span>
+                            <a
+                              href={`https://polygonscan.com/address/${cert.web3Credential.ownerWallet}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-emerald-400 hover:text-emerald-300 select-all"
+                            >
+                              {cert.web3Credential.ownerWallet}
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Blockchain Audit Anchor */}
                 <BlockchainAuditCard

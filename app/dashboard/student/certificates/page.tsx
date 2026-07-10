@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import CopyLinkButton from "@/components/ui/CopyLinkButton";
+import MintNftButton from "@/components/dashboard/MintNftButton";
 
 export default async function StudentCertificatesPage() {
   const session = await getSession();
@@ -19,6 +20,7 @@ export default async function StudentCertificatesPage() {
           course: { select: { title: true } },
           trainer: { include: { user: { select: { name: true } } } },
           verificationLogs: { select: { id: true } },
+          web3Credential: true,
         },
       },
     },
@@ -108,7 +110,15 @@ export default async function StudentCertificatesPage() {
 
                 {/* Action Buttons — only visible for issued certs */}
                 {cert.status === "ISSUED" && (
-                  <div className="flex flex-row flex-wrap gap-2 shrink-0">
+                  <div className="flex flex-row flex-wrap items-center gap-2 shrink-0">
+                    {cert.web3Credential ? (
+                      <div className="px-3 py-2 bg-cyan-950/20 text-cyan-400 border border-cyan-500/20 font-mono text-[10px] rounded-lg flex items-center gap-1.5 shrink-0 select-none">
+                        <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        <span>Minted Polygon #{cert.web3Credential.tokenId}</span>
+                      </div>
+                    ) : (
+                      <MintNftButton certificateId={cert.certificateId} certificateDbId={cert.id} />
+                    )}
                     {cert.pdfUrl && (
                       <a
                         href={cert.pdfUrl}
@@ -123,7 +133,7 @@ export default async function StudentCertificatesPage() {
                       href={`/verify/${cert.certificateId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors text-center"
+                      className="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-350 text-xs font-semibold rounded-lg transition-colors text-center"
                     >
                       🔍 Verify
                     </a>
