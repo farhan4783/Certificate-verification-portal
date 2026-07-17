@@ -106,22 +106,27 @@ async function processPdfGeneration(certificateId: string) {
     }
 
     if (!pdfUrl) {
-      try {
-        // Local development mock fallback
-        const fs = require("fs");
-        const path = require("path");
-        const localDir = path.join(process.cwd(), "public", "uploads", "certs");
-        if (!fs.existsSync(localDir)) {
-          fs.mkdirSync(localDir, { recursive: true });
-        }
-        const localPath = path.join(localDir, `${cert.certificateId}.pdf`);
-        fs.writeFileSync(localPath, pdfBuffer);
-        pdfUrl = `/uploads/certs/${cert.certificateId}.pdf`;
-        logger.info(`Saved certificate PDF locally at: ${pdfUrl}`);
-      } catch (fsError) {
-        logger.error(`Failed to save PDF locally (likely read-only filesystem on Vercel):`, fsError);
-        // Fallback: use inline Data URL for PDF if Cloudinary is missing on Vercel
+      // Serverless environments (like Vercel) have read-only filesystems (except /tmp)
+      if (process.env.VERCEL) {
+        logger.info(`Running on Vercel: using inline Data URL fallback for PDF storage.`);
         pdfUrl = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+      } else {
+        try {
+          // Local development filesystem storage fallback
+          const fs = require("fs");
+          const path = require("path");
+          const localDir = path.join(process.cwd(), "public", "uploads", "certs");
+          if (!fs.existsSync(localDir)) {
+            fs.mkdirSync(localDir, { recursive: true });
+          }
+          const localPath = path.join(localDir, `${cert.certificateId}.pdf`);
+          fs.writeFileSync(localPath, pdfBuffer);
+          pdfUrl = `/uploads/certs/${cert.certificateId}.pdf`;
+          logger.info(`Saved certificate PDF locally at: ${pdfUrl}`);
+        } catch (fsError) {
+          logger.warn(`Could not write PDF to local disk, falling back to Data URL:`, fsError);
+          pdfUrl = `data:application/pdf;base64,${pdfBuffer.toString("base64")}`;
+        }
       }
     }
 

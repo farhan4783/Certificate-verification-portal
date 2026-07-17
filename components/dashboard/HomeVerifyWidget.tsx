@@ -180,29 +180,56 @@ export default function HomeVerifyWidget() {
 
       {activeTab === "online" ? (
         /* Online Search Input Box */
-        <form onSubmit={handleVerify} className="relative flex gap-2 p-1.5 bg-slate-900 border border-slate-800/80 rounded-2xl focus-within:border-amber-500/50 shadow-2xl transition-all duration-300">
-          <div className="flex items-center pl-3 text-slate-500">
-            <Search className="h-5 w-5" />
+        <div className="space-y-2">
+          <form onSubmit={handleVerify} className="relative flex gap-2 p-1.5 bg-slate-900 border border-slate-800/80 rounded-2xl focus-within:border-amber-500/50 shadow-2xl transition-all duration-300">
+            <div className="flex items-center pl-3 text-slate-500">
+              <Search className="h-5 w-5" />
+            </div>
+            <input
+              value={certId}
+              onChange={(e) => setCertId(e.target.value)}
+              type="text"
+              placeholder="Enter Certificate ID (e.g. KTC-FSWDB-2026-0001)"
+              className="flex-1 bg-transparent border-0 text-slate-200 text-sm rounded-xl px-2 py-3 focus:outline-none placeholder:text-slate-600 font-mono"
+            />
+            <button
+              type="submit"
+              disabled={loading || !certId.trim()}
+              className="px-5 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold text-sm rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-amber-500/10"
+            >
+              {loading ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                "Verify"
+              )}
+            </button>
+          </form>
+
+          {/* Quick Demo Sample ID chips */}
+          <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 pt-1">
+            <span>Sample Demo Credentials:</span>
+            {["KTC-FSWDB-2026-0001", "KTC-DATA-2026-0002"].map((sample) => (
+              <button
+                key={sample}
+                type="button"
+                onClick={() => {
+                  setCertId(sample);
+                  setError("");
+                  setResult(null);
+                  setLoading(true);
+                  fetch(`/api/verify/${sample}`)
+                    .then((r) => r.json())
+                    .then((json) => setResult(json.data))
+                    .catch((err) => setError(err.message))
+                    .finally(() => setLoading(false));
+                }}
+                className="font-mono text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
+              >
+                {sample}
+              </button>
+            ))}
           </div>
-          <input
-            value={certId}
-            onChange={(e) => setCertId(e.target.value)}
-            type="text"
-            placeholder="Enter Certificate ID (e.g. KTC-BOOTCAMP-2026-0001)"
-            className="flex-1 bg-transparent border-0 text-slate-200 text-sm rounded-xl px-2 py-3 focus:outline-none placeholder:text-slate-600 font-mono"
-          />
-          <button
-            type="submit"
-            disabled={loading || !certId.trim()}
-            className="px-5 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 font-bold text-sm rounded-xl transition-all flex items-center gap-2 shrink-0 cursor-pointer shadow-lg shadow-amber-500/10"
-          >
-            {loading ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              "Verify"
-            )}
-          </button>
-        </form>
+        </div>
       ) : (
         /* Offline Crypographic Payload Box */
         <form onSubmit={handleOfflineVerify} className="space-y-3 bg-slate-900 border border-slate-800/80 rounded-2xl p-4 shadow-2xl transition-all duration-300">

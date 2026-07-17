@@ -1,41 +1,73 @@
-# 🚀 Deploying KodeToCareer Platform to Vercel
+# 🚀 Deploying KodeToCareer Platform to Vercel with Neon Serverless Postgres
 
-This guide provides step-by-step instructions to deploy the **KodeToCareer Certificate & Portfolio Verification Platform** live on Vercel with a production-ready PostgreSQL database.
+This guide provides step-by-step instructions to deploy the **KodeToCareer Certificate & Portfolio Verification Platform** live on Vercel using **Neon Serverless Postgres** — a production-grade, free-forever alternative to Supabase built for serverless Next.js apps and Prisma ORM.
+
+---
+
+## ⚡ Why Neon Postgres (Supabase Free Alternative)?
+
+If you are looking for a **free, reliable, production-ready database alternative to Supabase**:
+* **Neon.tech (Recommended)**: 
+  * **Free Tier**: 0.5 GiB storage, 1 project, serverless compute with zero idle cost, instant branching, and built-in connection pooling via pgBouncer/Neon Proxy (`-pooler` connection mode).
+  * **Serverless Optimized**: Perfectly tuned for Next.js API routes on Vercel without connection exhaustion errors.
+* **Secondary Free Options**:
+  * **Aiven for PostgreSQL**: Offers a 5 GB storage free tier with dedicated PostgreSQL instances.
+  * **Tembo / CockroachDB Serverless**: Cloud PostgreSQL options compatible with Prisma.
 
 ---
 
 ## 📋 Prerequisites
-Before you start, make sure you have:
-1. A **GitHub**, **GitLab**, or **Bitbucket** account with this codebase pushed to a repository.
-2. A **Vercel** account (free hobby tier is sufficient).
-3. A **PostgreSQL** database instance (you can spin up a free database on [Neon.tech](https://neon.tech), [Supabase](https://supabase.com), or use Vercel's built-in PostgreSQL).
+Before starting, ensure you have:
+1. A **GitHub**, **GitLab**, or **Bitbucket** account with this codebase pushed.
+2. A **Vercel** account (free Hobby tier is sufficient).
+3. A **Neon.tech** account (free signup at [neon.tech](https://neon.tech/)).
 
 ---
 
 ## 🛠️ Step-by-Step Deployment Guide
 
-### Step 1: Set up your Database (e.g. Neon or Supabase)
-Since the platform uses Prisma ORM with PostgreSQL, you need a live connection string:
-1. Sign up/log in to [Neon](https://neon.tech/) or [Supabase](https://supabase.com/).
-2. Create a new project/database.
-3. Copy the **Connection String** (URI format), which looks like this:
-   `postgresql://username:password@hostname:5432/dbname?sslmode=require`
+### Step 1: Create your Free Database on Neon.tech
+1. Sign up or log in at [Neon.tech](https://neon.tech/).
+2. Click **Create Project**.
+3. Name your project (e.g. `ktc-certificate-platform`) and select your nearest region.
+4. Once created, navigate to the **Dashboard** / **Connection Details**.
+5. Copy your connection string:
+   * **Pooled Connection String** (for `DATABASE_URL` in Next.js runtime on Vercel):
+     `postgresql://username:password@ep-xyz-pooler.region.aws.neon.tech/neondb?sslmode=require`
+   * **Direct Connection String** (if using `DIRECT_URL` for Prisma schema migrations):
+     `postgresql://username:password@ep-xyz.region.aws.neon.tech/neondb?sslmode=require`
 
 ---
 
-### Step 2: Push Database Schema and Seed Data
-Before building on Vercel, prepare your database schema and seed the initial Super Admin account:
-1. Open your terminal in this project directory.
-2. Create a temporary `.env` file in the project root containing your live connection string:
+### Step 2: Push Database Schema and Seed Data Locally
+Before building on Vercel, populate your live Neon database tables and seed the initial Super Admin account:
+
+1. Open your terminal in this project root directory.
+2. Create or update your `.env` file in the project root:
    ```env
-   DATABASE_URL="your_copied_connection_string"
-   JWT_SECRET="generate_a_random_jwt_secret_here"
+   # Neon Pooled Connection String for runtime queries
+   DATABASE_URL="postgresql://username:password@ep-xyz-pooler.region.aws.neon.tech/neondb?sslmode=require"
+
+   # App JWT secret for auth cookies
+   JWT_SECRET="super_secret_jwt_key_change_me_in_production"
+
+   # App public domain (used for QR code links and social sharing)
+   NEXT_PUBLIC_APP_URL="https://your-app-name.vercel.app"
+
+   # (Optional) Cloudinary for production asset storage
+   CLOUDINARY_CLOUD_NAME=""
+   CLOUDINARY_API_KEY=""
+   CLOUDINARY_API_SECRET=""
+
+   # (Optional) Resend for transactional email dispatch
+   RESEND_API_KEY=""
+   RESEND_FROM_EMAIL="certificates@kodetocareer.com"
    ```
-3. Run the Prisma schema push command to build all tables:
+3. Run Prisma schema push to build all database tables:
    ```bash
    npx prisma db push
    ```
-4. Run the seed script to create the default **Super Admin** account (`admin@kodetocareer.com` / `admin123`):
+4. Run the seed script to create default demo accounts (Super Admin, Trainer, Student, Course):
    ```bash
    npx prisma db seed
    ```
@@ -43,45 +75,55 @@ Before building on Vercel, prepare your database schema and seed the initial Sup
 ---
 
 ### Step 3: Configure `package.json` for Vercel
-To ensure Vercel automatically generates the Prisma Client before building the pages, check that your build command includes client generation. In your `package.json`, Vercel runs the `build` script. We have configured the `postinstall` hook in Next.js to do this automatically:
+Vercel automatically executes `npm run postinstall` during builds. Ensure your `package.json` contains:
 ```json
 "scripts": {
   "postinstall": "prisma generate"
 }
 ```
-*Note: This is already set up in the codebase.*
+*(This is already pre-configured in the codebase).*
 
 ---
 
-### Step 4: Import Project on Vercel
-1. Go to the [Vercel Dashboard](https://vercel.com/) and click **Add New** > **Project**.
-2. Connect your Git repository provider and import your project repository.
-3. In the **Configure Project** step:
-   * Keep **Framework Preset** as **Next.js**.
-   * Leave root directory as default `./`.
+### Step 4: Import & Deploy on Vercel
 
----
-
-### Step 5: Add Environment Variables in Vercel
-In the project settings on Vercel, expand the **Environment Variables** section and add the following keys:
+1. Go to your [Vercel Dashboard](https://vercel.com/) and click **Add New** > **Project**.
+2. Connect your Git repository provider and import `Certificate-verification-portal`.
+3. In **Configure Project**:
+   * **Framework Preset**: Next.js
+   * **Root Directory**: `./`
+4. Expand **Environment Variables** and add:
 
 | Key | Value | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://...` | The live PostgreSQL connection URI from Step 1. |
-| `JWT_SECRET` | *[Random secure string]* | Secret used to sign session tokens. |
+| `DATABASE_URL` | `postgresql://...-pooler...` | Neon pooled connection string |
+| `JWT_SECRET` | `secure_random_string` | Secret for JWT cookie encryption |
+| `NEXT_PUBLIC_APP_URL` | `https://your-domain.vercel.app` | Production app domain |
+| `CLOUDINARY_CLOUD_NAME` | *(optional)* | For Cloudinary image/PDF storage |
+| `CLOUDINARY_API_KEY` | *(optional)* | Cloudinary API Key |
+| `CLOUDINARY_API_SECRET` | *(optional)* | Cloudinary API Secret |
+| `RESEND_API_KEY` | *(optional)* | For live email notifications |
+
+5. Click **Deploy**. Vercel will build the app, generate the Prisma client, and launch your live site!
 
 ---
 
-### Step 6: Deploy!
-1. Click the **Deploy** button.
-2. Vercel will fetch the repository, run `npm run postinstall` (generating Prisma client), build the routes, and deploy the application.
-3. Once completed, Vercel will output a live domain link (e.g. `https://ktc-platform.vercel.app`).
+## 🔒 Default Logins & Post-Deployment Checklist
 
----
+After deployment finishes, test logging into your portal:
 
-## 🔒 Post-Deployment Security
-1. Log in to the live portal using the seed credentials:
+1. **Super Admin Console**:
    * **URL**: `https://your-domain.vercel.app/login`
    * **Email**: `admin@kodetocareer.com`
    * **Password**: `admin123`
-2. Go to the Admin/Trainer view and immediately change/update your passwords for production security.
+
+2. **Trainer Console**:
+   * **Email**: `trainer@kodetocareer.com`
+   * **Password**: `trainer123`
+
+3. **Student Portal**:
+   * **Email**: `student@kodetocareer.com`
+   * **Password**: `student123`
+
+4. **Security Recommendation**: Change all default passwords immediately after initial login.
+

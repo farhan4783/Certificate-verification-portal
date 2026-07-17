@@ -352,11 +352,12 @@ export default async function VerifyPage({ params }: PageProps) {
                   <div className="pt-4">
                     <a
                       href={cert.pdfUrl}
-                      target="_blank"
+                      target={cert.pdfUrl.startsWith("data:") ? "_self" : "_blank"}
+                      download={cert.pdfUrl.startsWith("data:") ? `${cert.certificateId}.pdf` : undefined}
                       rel="noreferrer"
-                      className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold text-sm rounded-xl transition duration-200 group shadow-lg shadow-amber-500/10"
+                      className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold text-sm rounded-xl transition duration-200 group shadow-lg shadow-amber-500/10 cursor-pointer"
                     >
-                      View Original PDF Certificate
+                      {cert.pdfUrl.startsWith("data:") ? "Download Official PDF Certificate" : "View Original PDF Certificate"}
                       <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
                     </a>
                   </div>
