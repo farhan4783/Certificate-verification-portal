@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Award, ShieldCheck, Download, Users, Zap, Lock, ArrowRight, CheckCircle2, Cpu } from "lucide-react";
 import HomeVerifyWidget from "@/components/dashboard/HomeVerifyWidget";
+import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
 
 export default function HomePage() {
   return (
@@ -68,8 +69,9 @@ export default function HomePage() {
           </p>
 
           {/* Verification Widget Integrated Directly on Hero */}
-          <div className="pt-4 max-w-xl mx-auto">
+          <div className="pt-4 max-w-xl mx-auto space-y-6">
             <HomeVerifyWidget />
+            <PdfFileVerifier />
           </div>
 
           {/* Quick CTA links */}

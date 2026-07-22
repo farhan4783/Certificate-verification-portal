@@ -65,7 +65,7 @@ export default function SocialShareBar({
             Share this credential
           </h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {/* LinkedIn Add to Profile */}
             <a
               href={linkedinAddUrl}
@@ -74,7 +74,18 @@ export default function SocialShareBar({
               className="flex items-center justify-center gap-2 py-2.5 px-4 bg-[#0A66C2]/15 hover:bg-[#0A66C2]/25 border border-[#0A66C2]/30 hover:border-[#0A66C2]/50 text-[#0A66C2] rounded-lg text-xs font-semibold transition-all duration-200 group"
             >
               <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
-              Add to LinkedIn
+              LinkedIn
+            </a>
+
+            {/* OpenBadges 3.0 JSON-LD */}
+            <a
+              href={`/api/verify/${certificateId}/badge.json`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 py-2.5 px-4 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-semibold transition-all duration-200 group"
+            >
+              <ExternalLink className="h-4 w-4 group-hover:scale-110 transition-transform" />
+              OpenBadge 3.0
             </a>
 
             {/* Twitter/X Share */}

@@ -5,6 +5,7 @@ import { VerificationResult } from "@prisma/client";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck, Cpu } from "lucide-react";
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
+import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
 import { after } from "next/server";
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -338,7 +339,22 @@ export default async function VerifyPage({ params }: PageProps) {
                   issueDate={cert.issueDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                 />
 
-                {/* Document View Action */}
+                {/* Embedded PDF Live Viewer */}
+                {cert.pdfUrl && (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Award className="h-4 w-4 text-amber-400" /> Embedded Official PDF Document Preview
+                    </h3>
+                    <div className="w-full h-96 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative">
+                      <iframe
+                        src={cert.pdfUrl}
+                        className="w-full h-full border-0"
+                        title="Official PDF Certificate Document"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Social Sharing */}
                 <SocialShareBar
                   certificateId={cert.certificateId}
@@ -349,7 +365,7 @@ export default async function VerifyPage({ params }: PageProps) {
                 />
 
                 {cert.pdfUrl && (
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <a
                       href={cert.pdfUrl}
                       target={cert.pdfUrl.startsWith("data:") ? "_self" : "_blank"}
@@ -362,6 +378,11 @@ export default async function VerifyPage({ params }: PageProps) {
                     </a>
                   </div>
                 )}
+
+                {/* PDF Drag-and-Drop Tamper Inspector */}
+                <div className="pt-4 border-t border-slate-850">
+                  <PdfFileVerifier />
+                </div>
 
               </div>
             ) : (

@@ -72,10 +72,40 @@ export default function IssueCertificateForm({ eligibleStudents, courses }: Prop
     }
   }
 
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+
   const langTitleMap: Record<string, string> = {
     en: "CERTIFICATE OF COMPLETION",
     es: "CERTIFICADO DE FINALIZACIÓN",
     fr: "CERTIFICAT DE RÉUSSITE",
+  };
+
+  const handleOpenPdfPreview = async () => {
+    if (!studentId || !courseId) return;
+    setIsPreviewLoading(true);
+    setPreviewModalOpen(true);
+
+    try {
+      const res = await fetch("/api/certificates/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          studentName: selectedStudent?.user.name || "Student Name",
+          courseTitle: selectedCourse?.title || "Course Title",
+          language,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.pdfUrl) {
+        setPreviewPdfUrl(data.pdfUrl);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsPreviewLoading(false);
+    }
   };
 
   return (
@@ -176,9 +206,14 @@ export default function IssueCertificateForm({ eligibleStudents, courses }: Prop
             <span className="flex items-center gap-1 text-amber-400 font-semibold">
               <Sparkles className="h-3.5 w-3.5" /> Live Visual Certificate Preview
             </span>
-            <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-              {language}
-            </span>
+            <button
+              type="button"
+              disabled={!studentId || !courseId}
+              onClick={handleOpenPdfPreview}
+              className="text-[10px] text-amber-400 hover:text-amber-300 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Full PDF Preview
+            </button>
           </div>
 
           <div className="text-center space-y-2 py-2">
@@ -223,7 +258,38 @@ export default function IssueCertificateForm({ eligibleStudents, courses }: Prop
           )}
         </button>
       </form>
+
+      {/* PDF Modal */}
+      {previewModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-slate-800">
+              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-400" /> High-DPI PDF Certificate Preview
+              </h3>
+              <button
+                onClick={() => setPreviewModalOpen(false)}
+                className="text-xs font-bold text-slate-400 hover:text-slate-100 px-3 py-1 bg-slate-800 rounded-lg cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+            <div className="flex-1 bg-slate-950 min-h-[500px] flex items-center justify-center relative">
+              {isPreviewLoading ? (
+                <div className="text-amber-400 flex items-center gap-2 text-xs font-mono">
+                  <RefreshCw className="h-5 w-5 animate-spin" /> Generating PDF preview...
+                </div>
+              ) : previewPdfUrl ? (
+                <iframe src={previewPdfUrl} className="w-full h-full min-h-[500px] border-0" title="PDF Preview" />
+              ) : (
+                <span className="text-xs text-rose-400">Failed to load preview</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
