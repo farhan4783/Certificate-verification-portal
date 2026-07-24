@@ -11,7 +11,8 @@ declare global {
 let prisma: PrismaClient;
 
 const connectionString = process.env.DATABASE_URL;
-const isExternalDb = connectionString?.includes("supabase.co") || connectionString?.includes("neon.tech") || connectionString?.includes("aivencloud.com");
+const isLocal = !connectionString || connectionString.includes("127.0.0.1") || connectionString.includes("localhost");
+const isExternalDb = !isLocal;
 
 const poolConfig = {
   connectionString,
