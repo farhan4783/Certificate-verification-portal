@@ -37,7 +37,11 @@ export async function GET(
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const protocol = request.headers.get("x-forwarded-proto") || "https";
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : (host && !host.includes("localhost") ? `${protocol}://${host}` : "https://certificate-verification-portal-4fazbzqjx.vercel.app");
     const profileUrl = `${appUrl}/profile/${student.enrollmentNumber}`;
 
     // Generate QR code pointing to public profile

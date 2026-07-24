@@ -156,7 +156,9 @@ async function main() {
     fs.mkdirSync(publicCertDir, { recursive: true });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : "https://certificate-verification-portal-4fazbzqjx.vercel.app";
 
   for (let i = 0; i < STUDENT_NAMES.length; i++) {
     const rawName = STUDENT_NAMES[i];

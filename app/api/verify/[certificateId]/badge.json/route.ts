@@ -16,7 +16,11 @@ export async function GET(
 ) {
   try {
     const { certificateId } = await params;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const protocol = request.headers.get("x-forwarded-proto") || "https";
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : (host && !host.includes("localhost") ? `${protocol}://${host}` : "https://certificate-verification-portal-4fazbzqjx.vercel.app");
 
     const cert = await prisma.certificate.findFirst({
       where: {

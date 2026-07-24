@@ -31,7 +31,9 @@ async function processPdfGeneration(certificateId: string) {
       return;
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
+      ? process.env.NEXT_PUBLIC_APP_URL
+      : "https://certificate-verification-portal-4fazbzqjx.vercel.app";
     const verificationUrl = `${appUrl}/verify/${cert.certificateId}`;
 
     // 1. Generate QR Code containing the public verification link + offline signature
