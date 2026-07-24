@@ -124,14 +124,28 @@ export async function POST(request: Request) {
         },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login API Error:", error);
+
+    let publicErrorMsg = "An unexpected error occurred";
+    if (!process.env.DATABASE_URL) {
+      publicErrorMsg = "Vercel Configuration Error: DATABASE_URL environment variable is missing in Vercel Settings.";
+    } else if (process.env.DATABASE_URL.includes("127.0.0.1") || process.env.DATABASE_URL.includes("localhost")) {
+      publicErrorMsg = "Vercel Configuration Error: DATABASE_URL is pointing to local 127.0.0.1. A cloud PostgreSQL URL is required for Vercel.";
+    } else if (!process.env.JWT_SECRET) {
+      publicErrorMsg = "Vercel Configuration Error: JWT_SECRET environment variable is missing in Vercel Settings.";
+    } else if (error?.code === "P1001" || error?.message?.includes("Can't reach database")) {
+      publicErrorMsg = "Database Connection Error: Unable to reach cloud database server. Please verify your cloud DATABASE_URL in Vercel.";
+    } else if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
+      publicErrorMsg = "Database Schema Error: Tables missing in cloud database. Run 'npx prisma db push && npx prisma db seed'.";
+    }
+
     return NextResponse.json(
       {
         success: false,
         error: {
           code: "INTERNAL_SERVER_ERROR",
-          message: "An unexpected error occurred",
+          message: publicErrorMsg,
         },
       },
       { status: 500 }
