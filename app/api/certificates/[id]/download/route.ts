@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { generateCertificatePDF } from "@/lib/pdf";
 import { generateQRCode } from "@/lib/qr";
+import { getAppBaseUrl } from "@/lib/utils";
 
 export async function GET(
   request: Request,
@@ -40,18 +41,7 @@ export async function GET(
 
     // Dynamically detect current protocol and host from request headers
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const protocol = request.headers.get("x-forwarded-proto") || "https";
-    
-    // Default to Vercel live domain if headers or env are not present
-    let appUrl = process.env.NEXT_PUBLIC_APP_URL;
-    if (!appUrl || appUrl.includes("localhost")) {
-      if (host && !host.includes("localhost")) {
-        appUrl = `${protocol}://${host}`;
-      } else {
-        appUrl = "https://certificate-verification-portal-4fazbzqjx.vercel.app";
-      }
-    }
-
+    const appUrl = getAppBaseUrl(host);
     const verificationUrl = `${appUrl}/verify/${cert.certificateId}`;
     const qrCodeDataUrl = await generateQRCode(verificationUrl);
 

@@ -7,6 +7,7 @@ import { signCertificatePayload } from "./crypto-sign";
 import crypto from "crypto";
 import logger from "./logger";
 import { Resend } from "resend";
+import { getAppBaseUrl } from "./utils";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "certificates@kodetocareer.com";
@@ -31,9 +32,7 @@ async function processPdfGeneration(certificateId: string) {
       return;
     }
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
-      ? process.env.NEXT_PUBLIC_APP_URL
-      : "https://certificate-verification-portal-4fazbzqjx.vercel.app";
+    const appUrl = getAppBaseUrl();
     const verificationUrl = `${appUrl}/verify/${cert.certificateId}`;
 
     // 1. Generate QR Code containing the public verification link + offline signature

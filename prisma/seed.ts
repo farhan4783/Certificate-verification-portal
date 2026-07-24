@@ -9,6 +9,7 @@ import { uploadToCloudinary } from "../lib/cloudinary";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { getAppBaseUrl } from "../lib/utils";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -156,9 +157,7 @@ async function main() {
     fs.mkdirSync(publicCertDir, { recursive: true });
   }
 
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
-    ? process.env.NEXT_PUBLIC_APP_URL
-    : "https://certificate-verification-portal-4fazbzqjx.vercel.app";
+  const appUrl = getAppBaseUrl();
 
   for (let i = 0; i < STUDENT_NAMES.length; i++) {
     const rawName = STUDENT_NAMES[i];

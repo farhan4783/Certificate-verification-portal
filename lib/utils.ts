@@ -21,3 +21,20 @@ export function generateCertificateId(courseTitle: string): string {
 export function generateVerificationToken(): string {
   return crypto.randomBytes(16).toString("hex");
 }
+
+export function getAppBaseUrl(hostHeader?: string | null): string {
+  let url = process.env.NEXT_PUBLIC_APP_URL || "https://certificate-verification-portal.vercel.app";
+  
+  if (hostHeader && !hostHeader.includes("localhost")) {
+    url = `https://${hostHeader}`;
+  }
+
+  // Strip temporary Vercel preview deployment hashes (e.g. -4fazbzqjx.vercel.app -> .vercel.app)
+  url = url.replace(/-[a-z0-9]{8,}\.vercel\.app$/i, ".vercel.app");
+
+  if (url.includes("localhost")) {
+    return "http://localhost:3000";
+  }
+
+  return url;
+}

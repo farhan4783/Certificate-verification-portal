@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { getAppBaseUrl } from "@/lib/utils";
 
 /**
  * Open Badges 3.0 Standard JSON-LD Endpoint
@@ -17,10 +18,7 @@ export async function GET(
   try {
     const { certificateId } = await params;
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const protocol = request.headers.get("x-forwarded-proto") || "https";
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
-      ? process.env.NEXT_PUBLIC_APP_URL
-      : (host && !host.includes("localhost") ? `${protocol}://${host}` : "https://certificate-verification-portal-4fazbzqjx.vercel.app");
+    const appUrl = getAppBaseUrl(host);
 
     const cert = await prisma.certificate.findFirst({
       where: {

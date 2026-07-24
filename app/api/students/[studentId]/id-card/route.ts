@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { generateQRCode } from "@/lib/qr";
+import { getAppBaseUrl } from "@/lib/utils";
 
 /**
  * Student ID Card Generator
@@ -38,10 +39,7 @@ export async function GET(
     }
 
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const protocol = request.headers.get("x-forwarded-proto") || "https";
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost"))
-      ? process.env.NEXT_PUBLIC_APP_URL
-      : (host && !host.includes("localhost") ? `${protocol}://${host}` : "https://certificate-verification-portal-4fazbzqjx.vercel.app");
+    const appUrl = getAppBaseUrl(host);
     const profileUrl = `${appUrl}/profile/${student.enrollmentNumber}`;
 
     // Generate QR code pointing to public profile

@@ -8,7 +8,9 @@ import SocialShareBar from "@/components/dashboard/SocialShareBar";
 import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
 import { headers } from "next/headers";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://certificate-verification-portal-4fazbzqjx.vercel.app";
+import { getAppBaseUrl } from "@/lib/utils";
+
+const appUrl = getAppBaseUrl();
 
 interface PageProps {
   params: Promise<{ certificateId: string }>;
