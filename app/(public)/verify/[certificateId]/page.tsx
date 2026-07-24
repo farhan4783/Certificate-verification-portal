@@ -6,85 +6,98 @@ import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck,
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
 import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
-import { after } from "next/server";
+import { headers } from "next/headers";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-export async function generateMetadata({ params }: PageProps) {
-  const { certificateId } = await params;
-
-  const cert = await prisma.certificate.findFirst({
-    where: {
-      OR: [
-        { certificateId: certificateId },
-        { verificationToken: certificateId },
-      ],
-    },
-    include: {
-      student: { include: { user: { select: { name: true } }, organization: { select: { name: true } } } },
-      course: { select: { title: true } },
-    },
-  });
-
-  if (!cert) {
-    return { title: "Invalid Credential – KodeToCareer" };
-  }
-
-  const title = `${cert.student.user.name} – ${cert.course.title} | Verified Credential`;
-  const description = `Verified credential for ${cert.student.user.name} in ${cert.course.title}, issued by ${cert.student.organization.name}. Secured with SHA-256 hashing and Ed25519 digital signatures.`;
-  const ogImageUrl = `${appUrl}/api/verify/${cert.certificateId}/og-image`;
-
-  return {
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `${appUrl}/verify/${cert.certificateId}`,
-      images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
-      type: "article",
-      siteName: "KodeToCareer",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [ogImageUrl],
-    },
-  };
-}
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://certificate-verification-portal-4fazbzqjx.vercel.app";
 
 interface PageProps {
   params: Promise<{ certificateId: string }>;
 }
 
+export async function generateMetadata({ params }: PageProps) {
+  try {
+    const { certificateId } = await params;
+
+    const cert = await prisma.certificate.findFirst({
+      where: {
+        OR: [
+          { certificateId: certificateId },
+          { verificationToken: certificateId },
+        ],
+      },
+      include: {
+        student: { include: { user: { select: { name: true } }, organization: { select: { name: true } } } },
+        course: { select: { title: true } },
+      },
+    });
+
+    if (!cert) {
+      return { title: "Invalid Credential – KodeToCareer" };
+    }
+
+    const studentName = cert.student?.user?.name || "Student";
+    const courseTitle = cert.course?.title || "Course";
+    const orgName = cert.student?.organization?.name || "Kode To Career";
+
+    const title = `${studentName} – ${courseTitle} | Verified Credential`;
+    const description = `Verified credential for ${studentName} in ${courseTitle}, issued by ${orgName}. Secured with SHA-256 hashing and Ed25519 digital signatures.`;
+    const ogImageUrl = `${appUrl}/api/verify/${cert.certificateId}/og-image`;
+
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `${appUrl}/verify/${cert.certificateId}`,
+        images: [{ url: ogImageUrl, width: 1200, height: 630, alt: title }],
+        type: "article",
+        siteName: "KodeToCareer",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [ogImageUrl],
+      },
+    };
+  } catch (e) {
+    return { title: "Credential Verification – KodeToCareer" };
+  }
+}
+
 export default async function VerifyPage({ params }: PageProps) {
   const { certificateId } = await params;
 
-  // 1. Fetch certificate details using Prisma directly on the server
-  const cert = await prisma.certificate.findFirst({
-    where: {
-      OR: [
-        { certificateId: certificateId },
-        { verificationToken: certificateId },
-      ],
-    },
-    include: {
-      student: {
-        include: {
-          user: { select: { name: true } },
-          organization: { select: { name: true, logo: true } },
-        },
+  // 1. Fetch certificate details safely
+  let cert: any = null;
+  try {
+    cert = await prisma.certificate.findFirst({
+      where: {
+        OR: [
+          { certificateId: certificateId },
+          { verificationToken: certificateId },
+        ],
       },
-      course: { select: { title: true } },
-      trainer: {
-        include: {
-          user: { select: { name: true } },
+      include: {
+        student: {
+          include: {
+            user: { select: { name: true } },
+            organization: { select: { name: true, logo: true } },
+          },
         },
+        course: { select: { title: true } },
+        trainer: {
+          include: {
+            user: { select: { name: true } },
+          },
+        },
+        web3Credential: true,
       },
-      web3Credential: true,
-    },
-  });
+    });
+  } catch (err) {
+    console.error("Failed to query certificate in VerifyPage:", err);
+  }
 
   // Determine verification result
   let result: VerificationResult = "INVALID";
@@ -103,12 +116,10 @@ export default async function VerifyPage({ params }: PageProps) {
     }
   }
 
-  // 2. Log verification attempt (if certificate exists and not a prefetch request)
+  // 2. Safely log verification attempt
   if (cert) {
     try {
-      const { headers } = await import("next/headers");
       const headersList = await headers();
-      
       const purpose = headersList.get("purpose") || headersList.get("x-purpose") || "";
       const isPrefetch = purpose === "prefetch" || headersList.get("x-middleware-prefetch") === "1";
 
@@ -120,28 +131,29 @@ export default async function VerifyPage({ params }: PageProps) {
         const isMobile = /mobile/i.test(userAgent);
         const device = isMobile ? "Mobile" : "Desktop";
 
-        after(async () => {
-          try {
-            await prisma.verificationLog.create({
-              data: {
-                certificateId: cert.id,
-                result,
-                ipAddress,
-                device,
-                userAgent,
-                referrer,
-                country,
-              },
-            });
-          } catch (logError) {
-            console.error("Failed to save verification log in after():", logError);
-          }
+        await prisma.verificationLog.create({
+          data: {
+            certificateId: cert.id,
+            result,
+            ipAddress,
+            device,
+            userAgent,
+            referrer,
+            country,
+          },
+        }).catch((logError) => {
+          console.error("Failed to save verification log:", logError);
         });
       }
     } catch (logError) {
-      console.error("Failed to log verification page view:", logError);
+      console.error("Failed to process verification log headers:", logError);
     }
   }
+
+  const studentName = cert?.student?.user?.name || "N/A";
+  const courseTitle = cert?.course?.title || "N/A";
+  const orgName = cert?.student?.organization?.name || "Kode To Career";
+  const trainerName = cert?.trainer?.user?.name || "Authorized Instructor";
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between antialiased selection:bg-amber-500/30">
@@ -221,32 +233,32 @@ export default async function VerifyPage({ params }: PageProps) {
                   
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Recipient</span>
-                    <span className="col-span-2 text-sm font-semibold text-slate-100">{cert.student.user.name}</span>
+                    <span className="col-span-2 text-sm font-semibold text-slate-100">{studentName}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Course / Program</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-200">{cert.course.title}</span>
+                    <span className="col-span-2 text-sm font-medium text-slate-200">{courseTitle}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Issuing Institution</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-200">{cert.student.organization.name}</span>
+                    <span className="col-span-2 text-sm font-medium text-slate-200">{orgName}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Authorized Trainer</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-300">{cert.trainer.user.name}</span>
+                    <span className="col-span-2 text-sm font-medium text-slate-300">{trainerName}</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Issue Date</span>
                     <span className="col-span-2 text-sm text-slate-300">
-                      {cert.issueDate.toLocaleDateString("en-US", {
+                      {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
                         day: "numeric",
-                      })}
+                      }) : "N/A"}
                     </span>
                   </div>
 
@@ -254,7 +266,7 @@ export default async function VerifyPage({ params }: PageProps) {
                     <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                       <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Expiration Date</span>
                       <span className="col-span-2 text-sm text-slate-300">
-                        {cert.expiryDate.toLocaleDateString("en-US", {
+                        {new Date(cert.expiryDate).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "long",
                           day: "numeric",
@@ -336,7 +348,7 @@ export default async function VerifyPage({ params }: PageProps) {
                   block={cert.blockchainBlock}
                   pdfHash={cert.pdfHash}
                   language={cert.language}
-                  issueDate={cert.issueDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                  issueDate={cert.issueDate ? new Date(cert.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}
                 />
 
                 {/* Embedded PDF Live Viewer */}
@@ -358,22 +370,21 @@ export default async function VerifyPage({ params }: PageProps) {
                 {/* Social Sharing */}
                 <SocialShareBar
                   certificateId={cert.certificateId}
-                  studentName={cert.student.user.name}
-                  courseTitle={cert.course.title}
-                  organizationName={cert.student.organization.name}
+                  studentName={studentName}
+                  courseTitle={courseTitle}
+                  organizationName={orgName}
                   verifyUrl={`${appUrl}/verify/${cert.certificateId}`}
                 />
 
-                {cert.pdfUrl && (
+                {cert.id && (
                   <div className="pt-2">
                     <a
-                      href={cert.pdfUrl}
-                      target={cert.pdfUrl.startsWith("data:") ? "_self" : "_blank"}
-                      download={cert.pdfUrl.startsWith("data:") ? `${cert.certificateId}.pdf` : undefined}
+                      href={`/api/certificates/${cert.id}/download`}
+                      target="_blank"
                       rel="noreferrer"
                       className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold text-sm rounded-xl transition duration-200 group shadow-lg shadow-amber-500/10 cursor-pointer"
                     >
-                      {cert.pdfUrl.startsWith("data:") ? "Download Official PDF Certificate" : "View Original PDF Certificate"}
+                      Download Official PDF Certificate
                       <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
                     </a>
                   </div>
