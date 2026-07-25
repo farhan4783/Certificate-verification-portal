@@ -20,21 +20,17 @@ const isExternalDb = !isLocal;
 const poolConfig = {
   connectionString,
   ssl: isExternalDb ? { rejectUnauthorized: false } : undefined,
-  max: process.env.NODE_ENV === "production" ? 2 : 10,
+  max: 2, // Keep connection pool light in serverless functions
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
 };
 
-if (process.env.NODE_ENV === "production") {
+if (!global.prisma) {
   const pool = new Pool(poolConfig);
   const adapter = new PrismaPg(pool);
-  prisma = new PrismaClient({ adapter });
-} else {
-  if (!global.prisma) {
-    const pool = new Pool(poolConfig);
-    const adapter = new PrismaPg(pool);
-    global.prismaPool = pool;
-    global.prisma = new PrismaClient({ adapter });
-  }
-  prisma = global.prisma;
+  global.prismaPool = pool;
+  global.prisma = new PrismaClient({ adapter });
 }
+prisma = global.prisma;
 
 export default prisma;

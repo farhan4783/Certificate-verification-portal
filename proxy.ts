@@ -21,37 +21,36 @@ function checkCsrf(request: NextRequest, pathname: string): boolean {
   if (!isMutation) return true;
 
   // Exempt public mutation routes
-  if (pathname === "/api/verify/offline" || pathname === "/api/auth/login") {
+  if (pathname.startsWith("/api/verify") || pathname.startsWith("/api/auth/login") || pathname.startsWith("/api/auth/logout")) {
     return true;
   }
 
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
 
-  let appHost = "";
-  try {
-    appHost = new URL(appUrl).host;
-  } catch (e) {
-    appHost = "localhost:3000";
-  }
+  if (!host) return true;
 
   if (origin) {
     try {
       const originHost = new URL(origin).host;
-      if (originHost !== appHost) return false;
+      if (originHost === host) return true;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl && new URL(appUrl).host === originHost) return true;
+      return false;
     } catch (e) {
       return false;
     }
   } else if (referer) {
     try {
       const refererHost = new URL(referer).host;
-      if (refererHost !== appHost) return false;
+      if (refererHost === host) return true;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+      if (appUrl && new URL(appUrl).host === refererHost) return true;
+      return false;
     } catch (e) {
       return false;
     }
-  } else {
-    return false; // Reject mutations with missing origin/referer
   }
 
   return true;
@@ -60,130 +59,41 @@ function checkCsrf(request: NextRequest, pathname: string): boolean {
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // 1. Verify CSRF for mutation requests
+  if (!checkCsrf(request, pathname)) {
+    return new NextResponse(
+      JSON.stringify({ error: "Forbidden: CSRF check failed" }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
+  }
+
+  // 2. Extract session token
+  const sessionToken = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  let session: any = null;
+
+  if (sessionToken) {
+    try {
+      const { payload } = await jose.jwtVerify(sessionToken, JWT_SECRET);
+
+      // Validate bound fingerprint
+      const userAgent = request.headers.get("user-agent") || "";
+      const expectedFingerprint = await hashUserAgent(userAgent);
+
+      if (payload.fingerprint === expectedFingerprint) {
+        session = payload;
+      }
+    } catch (err) {
+      // Token is invalid or expired
+      session = null;
+    }
+  }
+
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isApiRoute = pathname.startsWith("/api");
-  const isVerificationApiRoute = pathname.startsWith("/api/verify");
-  const isRefreshApiRoute = pathname === "/api/auth/refresh";
+  const isAuthApiRoute = pathname.startsWith("/api/auth");
+  const isPublicVerifyApiRoute = pathname.startsWith("/api/verify");
 
-  // CSRF Protection
-  if (!checkCsrf(request, pathname)) {
-    const res = NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "CSRF_ERROR",
-          message: "Action forbidden: CSRF validation failed",
-        },
-      },
-      { status: 403 }
-    );
-    injectSecurityHeaders(res);
-    return res;
-  }
-
-  // Get session cookie
-  const cookie = request.cookies.get(SESSION_COOKIE_NAME);
-  const token = cookie?.value;
-
-  let session: any = null;
-  let newCookiesToSet: string[] = [];
-
-  const userAgent = request.headers.get("user-agent") || "";
-  const currentFingerprint = await hashUserAgent(userAgent);
-
-  if (token) {
-    try {
-      const { payload } = await jose.jwtVerify(token, JWT_SECRET);
-      
-      // Fingerprint Pinning Check
-      if (payload.userFingerprint && payload.userFingerprint !== currentFingerprint) {
-        throw new Error("Session fingerprint mismatch");
-      }
-      
-      session = payload;
-    } catch (e) {
-      // Access token expired or fingerprint mismatch, attempt refresh rotation
-    }
-  }
-
-  // If token is invalid/expired but refresh cookie exists, request token rotation
-  if (!session && !isRefreshApiRoute) {
-    const refreshCookie = request.cookies.get(REFRESH_COOKIE_NAME);
-    if (refreshCookie?.value) {
-      try {
-        const refreshRes = await fetch(new URL("/api/auth/refresh", request.url), {
-          method: "POST",
-          headers: {
-            cookie: `${SESSION_COOKIE_NAME}=${token || ""}; ${REFRESH_COOKIE_NAME}=${refreshCookie.value}`,
-            "user-agent": userAgent, // Forward user agent for verification
-          },
-        });
-
-        if (refreshRes.ok) {
-          const setCookies = refreshRes.headers.getSetCookie();
-          if (setCookies && setCookies.length > 0) {
-            newCookiesToSet = setCookies;
-            const accessCookieStr = setCookies.find((c) => c.startsWith(`${SESSION_COOKIE_NAME}=`));
-            if (accessCookieStr) {
-              const match = accessCookieStr.match(new RegExp(`${SESSION_COOKIE_NAME}=([^;]+)`));
-              if (match && match[1]) {
-                const { payload } = await jose.jwtVerify(match[1], JWT_SECRET);
-                
-                // Double check fingerprint on newly rotated token
-                if (!payload.userFingerprint || payload.userFingerprint === currentFingerprint) {
-                  session = payload;
-                }
-              }
-            }
-          }
-        }
-      } catch (err) {
-        // Fallback or ignore
-      }
-    }
-  }
-
-  let response: NextResponse | null = null;
-
-  // Handle protected API routes
-  if (isApiRoute) {
-    const isPublicApi =
-      pathname === "/api/auth/login" ||
-      pathname === "/api/auth/register" ||
-      isRefreshApiRoute ||
-      isVerificationApiRoute;
-
-    if (!isPublicApi && !session) {
-      response = NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-          },
-        },
-        { status: 401 }
-      );
-    } else if (session) {
-      // API Role-based Access Control
-      if (pathname.startsWith("/api/trainers") && session.role !== "SUPER_ADMIN") {
-        response = NextResponse.json(
-          { success: false, error: { code: "FORBIDDEN", message: "Forbidden: Admins only" } },
-          { status: 403 }
-        );
-      } else if (pathname.startsWith("/api/templates") && session.role !== "SUPER_ADMIN") {
-        response = NextResponse.json(
-          { success: false, error: { code: "FORBIDDEN", message: "Forbidden: Admins only" } },
-          { status: 403 }
-        );
-      } else if (pathname.startsWith("/api/organizations") && session.role !== "SUPER_ADMIN") {
-        response = NextResponse.json(
-          { success: false, error: { code: "FORBIDDEN", message: "Forbidden: Admins only" } },
-          { status: 403 }
-        );
-      }
-    }
-  }
+  let response: NextResponse | undefined;
 
   // Handle protected Dashboard UI routes
   if (!response && isDashboardRoute) {
@@ -192,14 +102,32 @@ export default async function proxy(request: NextRequest) {
     } else {
       const role = session.role;
 
+      // Role-based Access Control (RBAC) Matrix
       if (pathname.startsWith("/dashboard/admin") && role !== "SUPER_ADMIN") {
         response = redirectToCorrectDashboard(role, request.url);
-      } else if (pathname.startsWith("/dashboard/trainer") && role !== "TRAINER") {
+      } else if (pathname.startsWith("/dashboard/trainer") && role !== "TRAINER" && role !== "SUPER_ADMIN") {
         response = redirectToCorrectDashboard(role, request.url);
-      } else if (pathname.startsWith("/dashboard/student") && role !== "STUDENT") {
+      } else if (pathname.startsWith("/dashboard/student") && role !== "STUDENT" && role !== "SUPER_ADMIN") {
         response = redirectToCorrectDashboard(role, request.url);
-      } else if (pathname === "/dashboard" || pathname === "/dashboard/") {
-        response = redirectToCorrectDashboard(role, request.url);
+      }
+    }
+  }
+
+  // Handle protected API routes
+  if (!response && isApiRoute && !isAuthApiRoute && !isPublicVerifyApiRoute) {
+    if (!session) {
+      response = new NextResponse(
+        JSON.stringify({ error: "Unauthorized: Access token missing or invalid" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      );
+    } else {
+      const role = session.role;
+
+      if (pathname.startsWith("/api/admin") && role !== "SUPER_ADMIN") {
+        response = new NextResponse(
+          JSON.stringify({ error: "Forbidden: Insufficient privileges" }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
       }
     }
   }
@@ -214,11 +142,32 @@ export default async function proxy(request: NextRequest) {
     response = NextResponse.next();
   }
 
-  // Inject rotated session cookies into response headers if rotated
-  if (newCookiesToSet.length > 0) {
-    newCookiesToSet.forEach((cookieString) => {
-      response!.headers.append("Set-Cookie", cookieString);
-    });
+  // Handle token refresh if session exists & needs renewal
+  if (session && session.exp) {
+    const now = Math.floor(Date.now() / 1000);
+    const timeUntilExp = session.exp - now;
+
+    // Refresh if less than 15 minutes remaining (900 seconds)
+    if (timeUntilExp < 900) {
+      try {
+        const newSessionToken = await new jose.SignJWT({
+          userId: session.userId,
+          email: session.email,
+          role: session.role,
+          fingerprint: session.fingerprint,
+        })
+          .setProtectedHeader({ alg: "HS256" })
+          .setIssuedAt()
+          .setExpirationTime("2h")
+          .sign(JWT_SECRET);
+
+        const isProduction = process.env.NODE_ENV === "production";
+        const cookieString = `${SESSION_COOKIE_NAME}=${newSessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=7200; ${isProduction ? "Secure;" : ""}`;
+        response.headers.append("Set-Cookie", cookieString);
+      } catch (err) {
+        console.error("Token refresh failed in proxy:", err);
+      }
+    }
   }
 
   injectSecurityHeaders(response);
@@ -256,14 +205,6 @@ function redirectToCorrectDashboard(role: string, baseUrl: string) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - logo/ (logos)
-     * - templates/ (templates)
-     */
     "/((?!_next/static|_next/image|favicon.ico|logo/|templates/).*)",
   ],
 };
