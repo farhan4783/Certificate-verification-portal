@@ -10,14 +10,17 @@ declare global {
 
 let prisma: PrismaClient;
 
-const connectionString = process.env.DATABASE_URL;
+// Hardcoded production fallback so Vercel can always reach Neon DB even if DATABASE_URL env is missing in Vercel settings
+const DEFAULT_NEON_DB = "postgresql://neondb_owner:npg_QHA4eCGTjox3@ep-restless-resonance-ayi0ykdo.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require";
+const connectionString = process.env.DATABASE_URL || DEFAULT_NEON_DB;
+
 const isLocal = !connectionString || connectionString.includes("127.0.0.1") || connectionString.includes("localhost");
 const isExternalDb = !isLocal;
 
 const poolConfig = {
   connectionString,
   ssl: isExternalDb ? { rejectUnauthorized: false } : undefined,
-  max: process.env.NODE_ENV === "production" ? 2 : 10, // Cap pool size in serverless environments
+  max: process.env.NODE_ENV === "production" ? 2 : 10,
 };
 
 if (process.env.NODE_ENV === "production") {
@@ -35,4 +38,3 @@ if (process.env.NODE_ENV === "production") {
 }
 
 export default prisma;
-

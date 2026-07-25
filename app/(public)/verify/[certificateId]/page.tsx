@@ -18,12 +18,18 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps) {
   try {
     const { certificateId } = await params;
+    const rawId = certificateId ? decodeURIComponent(certificateId).trim() : "";
+    const hyphenatedId = rawId.replace(/\s+/g, "-");
 
     const cert = await prisma.certificate.findFirst({
       where: {
         OR: [
           { certificateId: certificateId },
+          { certificateId: rawId },
+          { certificateId: hyphenatedId },
           { verificationToken: certificateId },
+          { verificationToken: rawId },
+          { verificationToken: hyphenatedId },
         ],
       },
       include: {
@@ -69,6 +75,8 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function VerifyPage({ params }: PageProps) {
   const { certificateId } = await params;
+  const rawId = certificateId ? decodeURIComponent(certificateId).trim() : "";
+  const hyphenatedId = rawId.replace(/\s+/g, "-");
 
   // 1. Fetch certificate details safely
   let cert: any = null;
@@ -77,7 +85,11 @@ export default async function VerifyPage({ params }: PageProps) {
       where: {
         OR: [
           { certificateId: certificateId },
+          { certificateId: rawId },
+          { certificateId: hyphenatedId },
           { verificationToken: certificateId },
+          { verificationToken: rawId },
+          { verificationToken: hyphenatedId },
         ],
       },
       include: {
