@@ -7,7 +7,6 @@ import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
 import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
 import { headers } from "next/headers";
-
 import { getAppBaseUrl } from "@/lib/utils";
 
 const appUrl = getAppBaseUrl();
@@ -121,31 +120,33 @@ export default async function VerifyPage({ params }: PageProps) {
   // 2. Safely log verification attempt
   if (cert) {
     try {
-      const headersList = await headers();
-      const purpose = headersList.get("purpose") || headersList.get("x-purpose") || "";
-      const isPrefetch = purpose === "prefetch" || headersList.get("x-middleware-prefetch") === "1";
+      const headersList = await headers().catch(() => null);
+      if (headersList) {
+        const purpose = headersList.get("purpose") || headersList.get("x-purpose") || "";
+        const isPrefetch = purpose === "prefetch" || headersList.get("x-middleware-prefetch") === "1";
 
-      if (!isPrefetch) {
-        const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
-        const userAgent = headersList.get("user-agent") || "unknown";
-        const referrer = headersList.get("referer") || "unknown";
-        const country = headersList.get("x-vercel-ip-country") || "local";
-        const isMobile = /mobile/i.test(userAgent);
-        const device = isMobile ? "Mobile" : "Desktop";
+        if (!isPrefetch) {
+          const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
+          const userAgent = headersList.get("user-agent") || "unknown";
+          const referrer = headersList.get("referer") || "unknown";
+          const country = headersList.get("x-vercel-ip-country") || "local";
+          const isMobile = /mobile/i.test(userAgent);
+          const device = isMobile ? "Mobile" : "Desktop";
 
-        await prisma.verificationLog.create({
-          data: {
-            certificateId: cert.id,
-            result,
-            ipAddress,
-            device,
-            userAgent,
-            referrer,
-            country,
-          },
-        }).catch((logError) => {
-          console.error("Failed to save verification log:", logError);
-        });
+          await prisma.verificationLog.create({
+            data: {
+              certificateId: cert.id,
+              result,
+              ipAddress,
+              device,
+              userAgent,
+              referrer,
+              country,
+            },
+          }).catch((logError) => {
+            console.error("Failed to save verification log:", logError);
+          });
+        }
       }
     } catch (logError) {
       console.error("Failed to process verification log headers:", logError);
