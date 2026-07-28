@@ -25,6 +25,7 @@ export default async function TrainerLayout({ children }: { children: React.Reac
             { href: "/dashboard/trainer", label: "Overview", icon: "📊" },
             { href: "/dashboard/trainer/courses", label: "My Courses", icon: "📚" },
             { href: "/dashboard/trainer/students", label: "My Students", icon: "🎓" },
+            { href: "/dashboard/trainer/assignments", label: "Assignments & Grading", icon: "📝" },
             { href: "/dashboard/trainer/certificates", label: "Issue Certificates", icon: "📜" },
             { href: "/dashboard/trainer/profile", label: "Experience Profile", icon: "👤" },
           ].map((item) => (
