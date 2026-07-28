@@ -40,143 +40,146 @@ export default async function PublicProfilePage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 antialiased">
       {/* Ambient Background */}
-      <div className="absolute top-0 left-1/3 w-96 h-96 bg-violet-500/8 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/3 w-96 h-96 bg-sky-200/30 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-200/20 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4 shadow-xs">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <KtcLogo size="md" href="/" />
-          <span className="text-xs text-slate-400 font-mono hidden sm:block">
+          <span className="text-xs text-slate-500 font-mono hidden sm:block">
             Public Candidate Profile · {student.enrollmentNumber}
           </span>
         </div>
       </header>
 
       {/* Profile Hero */}
-      <main className="max-w-5xl mx-auto px-6 py-12 relative z-0">
-        <div className="flex flex-col sm:flex-row items-start gap-6 mb-12">
+      <main className="max-w-5xl mx-auto px-6 py-12 relative z-0 space-y-10">
+        <div className="flex flex-col sm:flex-row items-start gap-6 bg-white border border-slate-200 p-8 rounded-3xl shadow-sm">
           {/* Avatar */}
-          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-3xl font-bold text-slate-950 shadow-lg shadow-amber-500/20 shrink-0">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center text-3xl font-extrabold text-white shadow-lg shadow-sky-500/20 shrink-0">
             {student.user.name.charAt(0).toUpperCase()}
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-slate-100 tracking-tight">
-              {student.user.name}
-            </h1>
-            <p className="text-sm text-slate-400">
-              <GraduationCap className="h-4 w-4 inline mr-1.5 -mt-0.5" />
-              {student.course.title} · {student.organization.name}
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                {student.user.name}
+              </h1>
+              <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                KodeToCareer Verified Graduate
+              </span>
+            </div>
+            <p className="text-slate-600 text-sm font-medium">
+              Graduate of <span className="font-bold text-slate-900">{student.course.title}</span> · {student.organization.name}
             </p>
-            <div className="flex items-center gap-3 mt-1">
-              {student.githubUrl && (
-                <a href={student.githubUrl} target="_blank" rel="noreferrer"
-                   className="text-slate-400 hover:text-slate-200 transition-colors">
-                  <Code className="h-4 w-4" />
-                </a>
-              )}
-              {student.linkedinUrl && (
-                <a href={student.linkedinUrl} target="_blank" rel="noreferrer"
-                   className="text-slate-400 hover:text-slate-200 transition-colors">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              )}
-              {student.portfolioUrl && (
-                <a href={student.portfolioUrl} target="_blank" rel="noreferrer"
-                   className="text-slate-400 hover:text-slate-200 transition-colors">
-                  <Globe className="h-4 w-4" />
-                </a>
-              )}
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-xs">
-              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-                {student.certificates.length} Verified Credential{student.certificates.length !== 1 ? "s" : ""}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-violet-500/10 text-violet-400 border border-violet-500/20 font-semibold">
-                {student.projects.length} Project{student.projects.length !== 1 ? "s" : ""}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 font-semibold">
-                {student.achievements.length} Achievement{student.achievements.length !== 1 ? "s" : ""}
-              </span>
-            </div>
+            <p className="text-xs text-slate-500 font-mono">
+              Enrollment ID: {student.enrollmentNumber}
+            </p>
           </div>
         </div>
 
         {/* Verified Credentials */}
-        <section className="mb-12">
-          <h2 className="text-lg font-bold text-slate-100 mb-5 flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-400" />
-            Verified Credentials
+        <section className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Award className="h-5 w-5 text-blue-600" />
+            Verified Digital Credentials ({student.certificates.length})
           </h2>
-          {student.certificates.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {student.certificates.map((cert) => (
-                <div
-                  key={cert.id}
-                  className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-emerald-500/30 transition-all group"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-mono text-amber-400">{cert.certificateId}</p>
-                      <h3 className="text-sm font-semibold text-slate-200">{cert.course.title}</h3>
-                      <p className="text-[11px] text-slate-500">
-                        Issued {cert.issueDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-                      </p>
-                    </div>
-                    <a
-                      href={`/verify/${cert.certificateId}`}
-                      className="shrink-0 text-xs text-emerald-400 hover:text-emerald-300 font-semibold opacity-0 group-hover:opacity-100 transition-all flex items-center gap-1"
-                    >
-                      Verify <ExternalLink className="h-3 w-3" />
-                    </a>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {student.certificates.map((cert) => (
+              <div
+                key={cert.id}
+                className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs hover:border-blue-300 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-3">
+                    <span className="px-2.5 py-1 rounded-md bg-blue-50 border border-blue-200 text-blue-700 text-xs font-mono font-bold">
+                      {cert.certificateId}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(cert.issueDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
                   </div>
+                  <h3 className="text-base font-bold text-slate-900 mb-1">{cert.course.title}</h3>
+                  {cert.grade && (
+                    <p className="text-xs text-slate-600">
+                      Grade Achieved: <span className="font-bold text-emerald-700">{cert.grade}</span>
+                    </p>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="py-8 text-center text-slate-500 text-sm border border-dashed border-slate-800 rounded-xl">
-              No credentials issued yet.
-            </div>
-          )}
+
+                <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-bold text-emerald-600 flex items-center gap-1">
+                    <ShieldCheck className="h-3.5 w-3.5" /> Ledger Authentic
+                  </span>
+                  <Link
+                    href={`/verify/${cert.certificateId}`}
+                    target="_blank"
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                  >
+                    Verify Credential ↗
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
-        {/* Projects */}
+        {/* Technical Projects */}
         {student.projects.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-lg font-bold text-slate-100 mb-5 flex items-center gap-2">
-              <Briefcase className="h-5 w-5 text-violet-400" />
-              Projects
+          <section className="space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-blue-600" />
+              Featured Technical Projects ({student.projects.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {student.projects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-violet-500/30 transition-all"
+                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs hover:border-blue-300 transition-all flex flex-col justify-between"
                 >
-                  <h3 className="text-sm font-semibold text-slate-200 mb-2">{project.title}</h3>
-                  {project.description && (
-                    <p className="text-xs text-slate-400 line-clamp-2 mb-3">{project.description}</p>
-                  )}
-                  {project.techStack.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-3">
-                      {project.techStack.map((tech) => (
-                        <span key={tech} className="text-[10px] px-2 py-0.5 bg-slate-800 border border-slate-700 rounded-md text-slate-400 font-mono">
+                  <div className="space-y-2">
+                    <h3 className="text-base font-bold text-slate-900">{project.title}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">{project.description}</p>
+                    <div className="flex flex-wrap gap-1.5 pt-2">
+                      {project.techStack.map((tech, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono text-slate-700 font-semibold"
+                        >
                           {tech}
                         </span>
                       ))}
                     </div>
-                  )}
-                  <div className="flex items-center gap-3 text-xs">
-                    {project.githubUrl && (
-                      <a href={project.githubUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors">
-                        <Code className="h-3.5 w-3.5" /> Source
+                  </div>
+
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex items-center gap-3">
+                    {project.projectUrl && (
+                      <a
+                        href={project.projectUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                      >
+                        Live Demo ↗
                       </a>
                     )}
-                    {project.projectUrl && (
-                      <a href={project.projectUrl} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 flex items-center gap-1 transition-colors">
-                        <Globe className="h-3.5 w-3.5" /> Demo
+                    {project.githubUrl && (
+                      <a
+                        href={project.githubUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1"
+                      >
+                        Source Code ↗
                       </a>
                     )}
                   </div>
@@ -188,40 +191,27 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
         {/* Achievements */}
         {student.achievements.length > 0 && (
-          <section className="mb-12">
-            <h2 className="text-lg font-bold text-slate-100 mb-5 flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-400" />
-              Achievements
+          <section className="space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              Academic & Tech Achievements ({student.achievements.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {student.achievements.map((achievement) => (
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {student.achievements.map((ach) => (
                 <div
-                  key={achievement.id}
-                  className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 hover:border-amber-500/30 transition-all"
+                  key={ach.id}
+                  className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex items-start gap-4"
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shrink-0">
-                      <Trophy className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-200">{achievement.title}</h3>
-                      {achievement.issuer && (
-                        <p className="text-[11px] text-slate-500 mt-0.5">{achievement.issuer}</p>
-                      )}
-                      {achievement.description && (
-                        <p className="text-xs text-slate-400 mt-1.5 line-clamp-2">{achievement.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[10px] px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 rounded text-amber-400 font-semibold uppercase">
-                          {achievement.type.replace("_", " ")}
-                        </span>
-                        {achievement.achievementDate && (
-                          <span className="text-[10px] text-slate-500">
-                            {achievement.achievementDate.toLocaleDateString("en-US", { year: "numeric", month: "short" })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                  <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                    <Trophy className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">{ach.title}</h3>
+                    <p className="text-xs text-slate-600 mt-1">{ach.description}</p>
+                    {ach.issuer && (
+                      <p className="text-[10px] text-slate-500 font-mono mt-1">Issued by {ach.issuer}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -231,10 +221,13 @@ export default async function PublicProfilePage({ params }: PageProps) {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-6 text-center">
-        <p className="text-xs text-slate-500">
-          © 2026 Kode To Career. Credential verification powered by SHA-256 hashing & Ed25519 digital signatures.
-        </p>
+      <footer className="border-t border-slate-200 bg-white py-6 px-6 mt-16">
+        <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-slate-500">
+          <p>© 2026 KodeToCareer Verified Student Directory.</p>
+          <Link href="/graduates" className="text-blue-600 hover:text-blue-700 font-bold">
+            ← Back to Recruiter Directory
+          </Link>
+        </div>
       </footer>
     </div>
   );

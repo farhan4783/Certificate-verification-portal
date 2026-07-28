@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import StatCard from "@/components/dashboard/StatCard";
 import { Award, ShieldCheck, Trophy, Briefcase } from "lucide-react";
-
 import KtcCareerPassport from "@/components/dashboard/KtcCareerPassport";
 
 export default async function StudentOverviewPage() {
@@ -33,9 +32,9 @@ export default async function StudentOverviewPage() {
 
   if (!student) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 bg-slate-900 border border-dashed border-slate-700 rounded-xl">
+      <div className="flex flex-col items-center justify-center h-64 bg-white border border-dashed border-slate-300 rounded-2xl">
         <span className="text-4xl mb-4">⚠️</span>
-        <p className="text-slate-400 text-sm">Student profile not found. Please contact your admin.</p>
+        <p className="text-slate-600 text-sm">Student profile not found. Please contact your admin.</p>
       </div>
     );
   }
@@ -88,12 +87,12 @@ export default async function StudentOverviewPage() {
       </div>
 
       {/* Certificate Showcase */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-200">My Certificates</h2>
+          <h2 className="text-sm font-bold text-slate-900">My Certificates</h2>
           <a
             href="/dashboard/student/certificates"
-            className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
           >
             View all →
           </a>
@@ -103,30 +102,27 @@ export default async function StudentOverviewPage() {
           {student.certificates.map((cert) => (
             <div
               key={cert.id}
-              className="relative bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-700 rounded-xl p-5 overflow-hidden hover:border-emerald-500/40 transition-all"
+              className="relative bg-white border border-slate-200 rounded-2xl p-5 overflow-hidden hover:border-blue-300 hover:shadow-md transition-all"
             >
-              {/* Decorative gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
-
               <div className="relative">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/20 border border-amber-500/30 flex items-center justify-center mb-3">
-                  <span className="text-xl">📜</span>
+                <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center mb-3 text-xl">
+                  📜
                 </div>
-                <p className="text-xs font-mono text-amber-400 mb-1 truncate">
+                <p className="text-xs font-mono font-bold text-blue-600 mb-1 truncate">
                   {cert.certificateId}
                 </p>
-                <h3 className="text-sm font-semibold text-slate-200 truncate">
+                <h3 className="text-sm font-bold text-slate-900 truncate">
                   {cert.course.title}
                 </h3>
 
-                <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded border ${
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                       cert.status === "ISSUED"
-                        ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/25"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : cert.status === "REVOKED"
-                        ? "bg-rose-500/15 text-rose-400 border-rose-500/25"
-                        : "bg-slate-700/50 text-slate-400 border-slate-600"
+                        ? "bg-rose-50 text-rose-700 border-rose-200"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
                     }`}
                   >
                     {cert.status}
@@ -136,7 +132,7 @@ export default async function StudentOverviewPage() {
                       href={`/verify/${cert.certificateId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                      className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                     >
                       Verify ↗
                     </a>
@@ -147,7 +143,7 @@ export default async function StudentOverviewPage() {
           ))}
 
           {student.certificates.length === 0 && (
-            <div className="col-span-3 py-10 text-center text-slate-500 text-sm border border-dashed border-slate-700 rounded-xl">
+            <div className="col-span-3 py-10 text-center text-slate-500 text-sm border border-dashed border-slate-300 bg-white rounded-2xl">
               <span className="text-3xl block mb-3">📋</span>
               No certificates yet. Complete your course to receive a certificate!
             </div>
@@ -156,7 +152,7 @@ export default async function StudentOverviewPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { href: "/dashboard/student/certificates", label: "Download PDFs", icon: "⬇️" },
           { href: "/dashboard/student/portfolio", label: "Add Projects", icon: "💡" },
@@ -168,7 +164,7 @@ export default async function StudentOverviewPage() {
           <a
             key={link.href}
             href={link.href}
-            className="flex items-center gap-2.5 px-4 py-3 bg-slate-900 border border-slate-800 rounded-xl text-sm text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 hover:border-slate-700 transition-all"
+            className="flex items-center gap-2.5 px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-blue-600 hover:bg-blue-50/50 hover:border-blue-200 transition-all shadow-2xs"
           >
             <span className="text-base">{link.icon}</span>
             {link.label}

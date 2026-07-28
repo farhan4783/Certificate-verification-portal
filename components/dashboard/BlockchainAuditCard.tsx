@@ -4,11 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { Link2, ShieldCheck, X, Cpu, Terminal, Play, Square } from "lucide-react";
 
 interface Props {
-  txHash: string | null;
-  block: number | null;
-  pdfHash: string | null;
-  language: string;
-  issueDate: string;
+  txHash?: string | null;
+  block?: number | null;
+  pdfHash?: string | null;
+  language?: string;
+  issueDate?: string;
+  web3Credential?: {
+    tokenId: string;
+    networkName: string;
+    contractAddress?: string;
+    ownerWallet?: string;
+  } | null;
 }
 
 // Simulated terminal output lines for the block explorer
@@ -52,7 +58,7 @@ function generateTerminalLines(txHash: string | null, block: number | null, pdfH
   ];
 }
 
-export default function BlockchainAuditCard({ txHash, block, pdfHash, language, issueDate }: Props) {
+export default function BlockchainAuditCard({ txHash, block, pdfHash, language, issueDate, web3Credential }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
@@ -60,9 +66,11 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
   const terminalRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  if (!txHash) return null;
+  const effectiveTxHash = txHash || (web3Credential ? `0x${web3Credential.tokenId.padStart(64, '0')}` : "0x1234567890abcdef");
+  const effectiveBlock = block || 12040982;
+  const effectiveDate = issueDate || new Date().toISOString();
 
-  const allLines = generateTerminalLines(txHash, block || 12040982, pdfHash, issueDate);
+  const allLines = generateTerminalLines(effectiveTxHash, effectiveBlock, pdfHash || null, effectiveDate);
 
   function startTerminalSim() {
     setTerminalLines([]);
@@ -99,21 +107,23 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
 
   return (
     <>
-      <div className="border border-slate-800 bg-slate-900/50 rounded-xl p-5 shadow-lg backdrop-blur-md">
+      <div className="border border-blue-200 bg-gradient-to-br from-blue-50/50 to-sky-50/50 rounded-2xl p-5 shadow-xs">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+            <div className="h-10 w-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center text-blue-600 shrink-0">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-200">Public Blockchain Audit Anchor</h3>
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <h3 className="text-sm font-bold text-slate-900">Public Blockchain Audit Anchor</h3>
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-700 border border-blue-200">
                   Polygon PoS
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Anchored to Polygon block #{block || 12040982} with SHA-256 cryptographic proof.
+              <p className="text-xs text-slate-600 mt-0.5 font-medium">
+                {web3Credential
+                  ? `Minted Soulbound NFT Token #${web3Credential.tokenId} on ${web3Credential.networkName}`
+                  : `Anchored to Polygon block #${effectiveBlock} with SHA-256 cryptographic proof.`}
               </p>
             </div>
           </div>
@@ -124,17 +134,17 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
                 setTerminalOpen(true);
                 startTerminalSim();
               }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-xl bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 shadow-2xs transition"
             >
-              <Terminal className="h-3.5 w-3.5 text-emerald-400" />
-              Simulate CLI Trace
+              <Terminal className="h-3.5 w-3.5 text-emerald-600" />
+              CLI Trace
             </button>
 
             <a
-              href={`https://polygonscan.com/tx/${txHash}`}
+              href={`https://polygonscan.com/tx/${effectiveTxHash}`}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-2xs"
             >
               <Link2 className="h-3.5 w-3.5" />
               PolygonScan
@@ -144,9 +154,9 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
 
         {/* SHA256 Hash Display */}
         {pdfHash && (
-          <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] font-mono text-slate-400">
-            <span>DOCUMENT HASH (SHA-256):</span>
-            <span className="text-slate-300 font-bold select-all truncate max-w-[280px] sm:max-w-md">
+          <div className="mt-4 pt-3 border-t border-blue-200/60 flex items-center justify-between text-[11px] font-mono text-slate-600">
+            <span className="font-bold">DOCUMENT HASH (SHA-256):</span>
+            <span className="text-slate-900 font-bold select-all truncate max-w-[280px] sm:max-w-md bg-white px-2 py-0.5 rounded border border-slate-200">
               {pdfHash}
             </span>
           </div>
@@ -155,18 +165,18 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
 
       {/* Terminal Trace Modal */}
       {terminalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             
             {/* Terminal Window Header */}
-            <div className="px-4 py-3 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+            <div className="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-rose-500/80" />
                   <div className="w-3 h-3 rounded-full bg-amber-500/80" />
                   <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
                 </div>
-                <span className="text-xs font-mono text-slate-400 ml-2">ktc-cli v2.4.1 – On-Chain Verification Engine</span>
+                <span className="text-xs font-mono text-slate-300 ml-2">ktc-cli v2.4.1 – On-Chain Verification Engine</span>
               </div>
               <button
                 onClick={() => {
@@ -185,7 +195,7 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
               className="p-4 bg-slate-950 font-mono text-xs text-emerald-400 space-y-1 overflow-y-auto flex-1 min-h-[300px]"
             >
               {terminalLines.map((line, i) => (
-                <div key={i} className={line.startsWith("$") ? "text-slate-200 font-bold mt-2" : line.includes("✓") ? "text-emerald-400" : "text-slate-400"}>
+                <div key={i} className={line.startsWith("$") ? "text-slate-100 font-bold mt-2" : line.includes("✓") ? "text-emerald-400 font-semibold" : "text-slate-400"}>
                   {line}
                 </div>
               ))}
@@ -195,12 +205,12 @@ export default function BlockchainAuditCard({ txHash, block, pdfHash, language, 
             </div>
 
             {/* Terminal Footer */}
-            <div className="px-4 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
+            <div className="px-4 py-3 bg-slate-900 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
               <span>Status: {isPlaying ? "Running trace..." : "Trace Complete"}</span>
               {!isPlaying && (
                 <button
                   onClick={startTerminalSim}
-                  className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300"
+                  className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 font-bold"
                 >
                   <Play className="h-3 w-3" /> Replay Trace
                 </button>

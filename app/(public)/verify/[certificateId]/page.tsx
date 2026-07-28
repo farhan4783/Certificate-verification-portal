@@ -115,52 +115,52 @@ export default async function VerifyPage({ params }: PageProps) {
   }
 
   // Determine verification result
-  let result: VerificationResult = "INVALID";
-  let statusText = "Invalid Credential";
-  
+  let result: VerificationResult = VerificationResult.INVALID;
+  let statusText = "INVALID CREDENTIAL";
+
   if (cert) {
-    if (cert.status === "REVOKED") {
-      result = "REVOKED";
-      statusText = "Revoked Credential";
-    } else if (cert.status === "EXPIRED" || (cert.expiryDate && new Date() > cert.expiryDate)) {
-      result = "EXPIRED";
-      statusText = "Expired Credential";
-    } else if (cert.status === "ISSUED" || cert.status === "GENERATED") {
-      result = "VALID";
-      statusText = "Verified Credential";
+    if (cert.status === "ISSUED") {
+      if (cert.expiryDate && new Date(cert.expiryDate) < new Date()) {
+        result = VerificationResult.EXPIRED;
+        statusText = "EXPIRED CREDENTIAL";
+      } else {
+        result = VerificationResult.VALID;
+        statusText = "OFFICIALLY VERIFIED CREDENTIAL";
+      }
+    } else if (cert.status === "REVOKED") {
+      result = VerificationResult.REVOKED;
+      statusText = "REVOKED CREDENTIAL";
     }
   }
 
-  // 2. Safely log verification attempt
+  // 2. Log Verification Event
   if (cert) {
     try {
-      const headersList = await headers().catch(() => null);
-      if (headersList) {
-        const purpose = headersList.get("purpose") || headersList.get("x-purpose") || "";
-        const isPrefetch = purpose === "prefetch" || headersList.get("x-middleware-prefetch") === "1";
+      const headersList = await headers();
+      const purposeHeader = headersList.get("purpose") || headersList.get("sec-purpose") || "";
+      const isPrefetch = purposeHeader.toLowerCase().includes("prefetch");
 
-        if (!isPrefetch) {
-          const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
-          const userAgent = headersList.get("user-agent") || "unknown";
-          const referrer = headersList.get("referer") || "unknown";
-          const country = headersList.get("x-vercel-ip-country") || "local";
-          const isMobile = /mobile/i.test(userAgent);
-          const device = isMobile ? "Mobile" : "Desktop";
+      if (!isPrefetch) {
+        const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
+        const userAgent = headersList.get("user-agent") || "unknown";
+        const referrer = headersList.get("referer") || "unknown";
+        const country = headersList.get("x-vercel-ip-country") || "local";
+        const isMobile = /mobile/i.test(userAgent);
+        const device = isMobile ? "Mobile" : "Desktop";
 
-          await prisma.verificationLog.create({
-            data: {
-              certificateId: cert.id,
-              result,
-              ipAddress,
-              device,
-              userAgent,
-              referrer,
-              country,
-            },
-          }).catch((logError) => {
-            console.error("Failed to save verification log:", logError);
-          });
-        }
+        await prisma.verificationLog.create({
+          data: {
+            certificateId: cert.id,
+            result,
+            ipAddress,
+            device,
+            userAgent,
+            referrer,
+            country,
+          },
+        }).catch((logError) => {
+          console.error("Failed to save verification log:", logError);
+        });
       }
     } catch (logError) {
       console.error("Failed to process verification log headers:", logError);
@@ -173,16 +173,16 @@ export default async function VerifyPage({ params }: PageProps) {
   const trainerName = cert?.trainer?.user?.name || "Authorized Instructor";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between antialiased selection:bg-amber-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between antialiased">
       {/* Background glowing ambient effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-200/30 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-200/20 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Header */}
-      <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4">
+      {/* Light Header */}
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4 shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <KtcLogo size="md" href="/" />
-          <div className="text-xs text-slate-400 font-mono hidden sm:block">
+          <div className="text-xs text-slate-500 font-mono hidden sm:block">
             Sovereign Ledger Verification v1.0
           </div>
         </div>
@@ -190,7 +190,7 @@ export default async function VerifyPage({ params }: PageProps) {
 
       {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-6 relative z-0">
-        <div className="w-full max-w-2xl bg-slate-900/60 border border-slate-800/80 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-300">
+        <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden backdrop-blur-xl">
           
           {/* Card Accent Top Line */}
           <div className={`h-1.5 w-full ${
@@ -206,30 +206,30 @@ export default async function VerifyPage({ params }: PageProps) {
               {result === "VALID" && (
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl scale-125 animate-pulse" />
-                  <ShieldCheck className="h-16 w-16 text-emerald-400 relative" />
+                  <ShieldCheck className="h-16 w-16 text-emerald-600 relative" />
                 </div>
               )}
               {result === "EXPIRED" && (
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl scale-125" />
-                  <AlertTriangle className="h-16 w-16 text-amber-400 relative" />
+                  <AlertTriangle className="h-16 w-16 text-amber-500 relative" />
                 </div>
               )}
               {(result === "INVALID" || result === "REVOKED") && (
                 <div className="relative mb-4">
                   <div className="absolute inset-0 bg-rose-500/20 rounded-full blur-xl scale-125" />
-                  <XCircle className="h-16 w-16 text-rose-400 relative" />
+                  <XCircle className="h-16 w-16 text-rose-600 relative" />
                 </div>
               )}
 
-              <h1 className={`text-2xl font-bold tracking-tight ${
-                result === "VALID" ? "text-emerald-400" :
-                result === "EXPIRED" ? "text-amber-400" :
-                "text-rose-400"
+              <h1 className={`text-2xl font-extrabold tracking-tight ${
+                result === "VALID" ? "text-emerald-700" :
+                result === "EXPIRED" ? "text-amber-700" :
+                "text-rose-700"
               }`}>
                 {statusText}
               </h1>
-              <p className="text-slate-400 text-sm mt-1">
+              <p className="text-slate-600 text-sm mt-1">
                 {result === "VALID" 
                   ? "This credential has been verified as authentic and active." 
                   : "We could not verify the authenticity of this credential."}
@@ -241,16 +241,16 @@ export default async function VerifyPage({ params }: PageProps) {
               <div className="space-y-6">
                 
                 {/* Certificate Details Info grid */}
-                <div className="bg-slate-950/50 rounded-xl border border-slate-800/60 p-6 space-y-4">
+                <div className="bg-slate-50 rounded-xl border border-slate-200 p-6 space-y-4 shadow-2xs">
                   
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Recipient</span>
                     <div className="col-span-2 flex items-center justify-between gap-2">
-                      <span className="text-sm font-semibold text-slate-100">{studentName}</span>
+                      <span className="text-sm font-extrabold text-slate-900">{studentName}</span>
                       {cert?.student?.enrollmentNumber && (
                         <Link
                           href={`/profile/${cert.student.enrollmentNumber}`}
-                          className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20"
+                          className="text-xs text-blue-700 hover:text-blue-800 font-bold flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-200"
                         >
                           KTC Talent Profile ↗
                         </Link>
@@ -258,24 +258,24 @@ export default async function VerifyPage({ params }: PageProps) {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Course / Program</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-200">{courseTitle}</span>
+                    <span className="col-span-2 text-sm font-semibold text-slate-800">{courseTitle}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Issuing Institution</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-200">{orgName}</span>
+                    <span className="col-span-2 text-sm font-semibold text-slate-800">{orgName}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Authorized Trainer</span>
-                    <span className="col-span-2 text-sm font-medium text-slate-300">{trainerName}</span>
+                    <span className="col-span-2 text-sm font-medium text-slate-700">{trainerName}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Issue Date</span>
-                    <span className="col-span-2 text-sm text-slate-300">
+                    <span className="col-span-2 text-sm font-medium text-slate-700">
                       {cert.issueDate ? new Date(cert.issueDate).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "long",
@@ -285,9 +285,9 @@ export default async function VerifyPage({ params }: PageProps) {
                   </div>
 
                   {cert.expiryDate && (
-                    <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
-                      <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Expiration Date</span>
-                      <span className="col-span-2 text-sm text-slate-300">
+                    <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
+                      <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Expiry Date</span>
+                      <span className="col-span-2 text-sm text-slate-700">
                         {new Date(cert.expiryDate).toLocaleDateString("en-US", {
                           year: "numeric",
                           month: "long",
@@ -297,160 +297,85 @@ export default async function VerifyPage({ params }: PageProps) {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
+                  <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Credential ID</span>
-                    <span className="col-span-2 text-sm font-mono text-amber-400 select-all">{cert.certificateId}</span>
+                    <span className="col-span-2 text-sm font-mono font-bold text-blue-700">{cert.certificateId}</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2">
-                    <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Language</span>
-                    <span className="col-span-2 text-sm font-semibold text-slate-200">
-                      {cert.language === "es" ? "Español (ES) 🇪🇸" : cert.language === "fr" ? "Français (FR) 🇫🇷" : "English (EN) 🇬🇧"}
-                    </span>
-                  </div>
+                  {cert.grade && (
+                    <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-200/80">
+                      <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Final Grade</span>
+                      <span className="col-span-2 text-sm font-bold text-emerald-700">{cert.grade}</span>
+                    </div>
+                  )}
 
+                  {cert.pdfHash && (
+                    <div className="grid grid-cols-3 gap-2 py-2">
+                      <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">SHA-256 Integrity</span>
+                      <span className="col-span-2 text-[10px] font-mono text-slate-600 break-all bg-white p-2 rounded border border-slate-200">
+                        {cert.pdfHash}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Web3 Credential (NFT) Details */}
+                {/* Web3 Blockchain Audit Card */}
                 {cert.web3Credential && (
-                  <div className="border border-cyan-800/80 bg-cyan-950/10 rounded-xl p-5 shadow-lg shadow-cyan-500/5 mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/25 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5 animate-pulse">
-                        <Cpu className="h-4.5 w-4.5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Soulbound Token Credential</h3>
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-                            ERC-721
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                          This certificate has been minted as an on-chain non-transferable Soulbound NFT, verifying ownership and registry directly against the public blockchain contract.
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-[10px] font-mono">
-                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850 truncate">
-                            <span className="text-slate-500 block mb-0.5">CONTRACT ADDRESS</span>
-                            <a
-                              href={`https://polygonscan.com/address/${cert.web3Credential.contractAddress}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-cyan-400 hover:text-cyan-300 select-all"
-                            >
-                              {cert.web3Credential.contractAddress}
-                            </a>
-                          </div>
-                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850">
-                            <span className="text-slate-500 block mb-0.5">TOKEN ID / NETWORK</span>
-                            <span className="text-slate-200">
-                              #{cert.web3Credential.tokenId} ({cert.web3Credential.networkName})
-                            </span>
-                          </div>
-                          <div className="p-2 rounded bg-slate-950/80 border border-slate-850 sm:col-span-2 truncate">
-                            <span className="text-slate-500 block mb-0.5">OWNER WALLET</span>
-                            <a
-                              href={`https://polygonscan.com/address/${cert.web3Credential.ownerWallet}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-emerald-400 hover:text-emerald-300 select-all"
-                            >
-                              {cert.web3Credential.ownerWallet}
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <BlockchainAuditCard web3Credential={cert.web3Credential} />
                 )}
 
-                {/* Blockchain Audit Anchor */}
-                <BlockchainAuditCard
-                  txHash={cert.blockchainTxHash}
-                  block={cert.blockchainBlock}
-                  pdfHash={cert.pdfHash}
-                  language={cert.language}
-                  issueDate={cert.issueDate ? new Date(cert.issueDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : ""}
-                />
+                {/* PDF Verification & Download Actions */}
+                <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                  {cert.pdfUrl && (
+                    <a
+                      href={cert.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all shadow-md shadow-sky-500/20 text-center flex items-center justify-center gap-2"
+                    >
+                      <span>Download Official PDF Certificate</span>
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </div>
 
-                {/* Embedded PDF Live Viewer */}
-                {cert.pdfUrl && (
-                  <div className="space-y-3 pt-2">
-                    <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                      <Award className="h-4 w-4 text-amber-400" /> Embedded Official PDF Document Preview
-                    </h3>
-                    <div className="w-full h-96 bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative">
-                      <iframe
-                        src={cert.pdfUrl}
-                        className="w-full h-full border-0"
-                        title="Official PDF Certificate Document"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Social Sharing */}
+                {/* Social Share Component */}
                 <SocialShareBar
                   certificateId={cert.certificateId}
-                  studentName={studentName}
                   courseTitle={courseTitle}
-                  organizationName={orgName}
-                  verifyUrl={`${appUrl}/verify/${cert.certificateId}`}
+                  studentName={studentName}
                 />
 
-                {cert.id && (
-                  <div className="pt-2">
-                    <a
-                      href={`/api/certificates/${cert.id}/download`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold text-sm rounded-xl transition duration-200 group shadow-lg shadow-amber-500/10 cursor-pointer"
-                    >
-                      Download Official PDF Certificate
-                      <ExternalLink className="h-4 w-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
-                    </a>
-                  </div>
-                )}
-
-                {/* PDF Drag-and-Drop Tamper Inspector */}
-                <div className="pt-4 border-t border-slate-850">
-                  <PdfFileVerifier />
+                {/* PDF Drag & Drop Integrity Verifier */}
+                <div className="pt-4 border-t border-slate-200">
+                  <h3 className="text-xs font-bold text-slate-900 mb-2">Cryptographic PDF Verification</h3>
+                  <PdfFileVerifier expectedHash={cert.pdfHash || ""} />
                 </div>
-
               </div>
             ) : (
-              /* Invalid State details */
-              <div className="space-y-6">
-                <div className="bg-rose-950/20 rounded-xl border border-rose-900/30 p-6 text-center space-y-3">
-                  <p className="text-slate-300 text-sm leading-relaxed">
-                    This certificate could not be resolved in the Kode To Career platform database.
-                  </p>
-                  <p className="text-slate-400 text-xs leading-relaxed">
-                    If this credential was issued recently, it might still be in DRAFT mode or the link could contain typographical errors. Please double check the QR scan address or verify with the issuer.
-                  </p>
-                </div>
-                <div className="text-center pt-2">
-                  <a
-                    href="mailto:info@kodetocareer.com"
-                    className="inline-flex items-center justify-center text-xs font-semibold text-amber-400 hover:text-amber-300 transition duration-200 border-b border-transparent hover:border-amber-350"
-                  >
-                    Contact platform support at info@kodetocareer.com
-                  </a>
-                </div>
+              <div className="text-center py-6">
+                <p className="text-slate-600 text-sm mb-4">
+                  The requested certificate ID <span className="font-mono font-bold text-rose-600">{certificateId}</span> was not found in our verified ledger.
+                </p>
+                <Link
+                  href="/"
+                  className="inline-block px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors"
+                >
+                  Return to Home
+                </Link>
               </div>
             )}
-
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 px-6 py-6 w-full text-center">
+      <footer className="border-t border-slate-200 bg-white py-6 px-6 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 Kode To Career. All rights reserved.</p>
+          <p>© 2026 KodeToCareer Sovereign Verification System. All rights reserved.</p>
           <div className="flex gap-4">
-            <a href="https://kodetocareer.com/privacy" className="hover:text-slate-400 transition-colors">Privacy Policy</a>
-            <a href="https://kodetocareer.com/terms" className="hover:text-slate-400 transition-colors">Terms of Service</a>
+            <Link href="/" className="hover:text-slate-800 transition-colors">Home</Link>
+            <Link href="/graduates" className="hover:text-slate-800 transition-colors">Talent Showcase</Link>
           </div>
         </div>
       </footer>

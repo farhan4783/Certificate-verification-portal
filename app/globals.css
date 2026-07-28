@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #050b14;
-  --foreground: #f8fafc;
-  --sidebar-bg: #0b1329;
-  --card-bg: #0b1329;
-  --card-border: #1e293b;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
   --accent: #0072ff;
   --accent-light: #00c6ff;
-  --accent-muted: rgba(0, 114, 255, 0.15);
+  --accent-muted: rgba(0, 114, 255, 0.08);
 }
 
 @theme inline {
@@ -26,13 +26,13 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* KTC Brand Gradient utilities */
+/* KTC Light Brand Gradient utilities */
 .bg-ktc-gradient {
   background: linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #0052d4 100%);
 }
 
 .text-ktc-gradient {
-  background: linear-gradient(135deg, #00c6ff 0%, #0072ff 50%, #0052d4 100%);
+  background: linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -41,16 +41,16 @@ html, body {
   border-image: linear-gradient(135deg, #00c6ff, #0072ff) 1;
 }
 
-/* Custom scrollbar */
+/* Custom light scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #050b14;
+  background: #f1f5f9;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: #cbd5e1;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
@@ -59,6 +59,6 @@ html, body {
 
 /* Selection */
 ::selection {
-  background: rgba(0, 198, 255, 0.25);
-  color: #ffffff;
+  background: rgba(0, 114, 255, 0.15);
+  color: #0052d4;
 }
