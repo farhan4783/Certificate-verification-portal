@@ -23,7 +23,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
         <nav className="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
           {[
             { href: "/dashboard/student", label: "My Dashboard", icon: "📊" },
+            { href: "/dashboard/student/schedule", label: "Course Schedule", icon: "📅" },
             { href: "/dashboard/student/certificates", label: "My Certificates", icon: "📜" },
+            { href: "/dashboard/student/recordings", label: "Class Recordings", icon: "🎬" },
             { href: "/dashboard/student/portfolio", label: "Portfolio", icon: "💼" },
             { href: "/dashboard/student/achievements", label: "Achievements", icon: "🏆" },
             { href: "/dashboard/student/profile", label: "My Profile", icon: "👤" },

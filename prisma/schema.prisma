@@ -32,6 +32,19 @@ enum BatchStatus {
   CANCELLED
 }
 
+enum SessionType {
+  LECTURE          // Mon-Fri daily class
+  DOUBT_SESSION    // Saturday doubt clearing
+  PROJECT_DAY      // Sunday assignment & project building
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  GRADED
+  RESUBMIT
+}
+
 enum TemplateStatus {
   ACTIVE
   ARCHIVED
@@ -153,6 +166,9 @@ model Student {
   emailLogs        EmailLog[]
   projects         Project[]
   achievements     Achievement[]
+  attendance       StudentAttendance[]
+  submissions      AssignmentSubmission[]
+  progress         StudentProgress?
 
   @@index([organizationId])
   @@index([courseId])
@@ -190,9 +206,15 @@ model CertificateBatch {
   batchName         String
   status            BatchStatus   @default(ACTIVE)
   totalCertificates Int           @default(0)
+  meetLink          String?       // Google Meet link for this batch
+  driveFolderUrl    String?       // Google Drive folder URL for class recordings
+  startDate         DateTime?
+  endDate           DateTime?
+  totalSessions     Int           @default(0)  // Total planned class sessions
   createdAt         DateTime      @default(now())
   certificates      Certificate[]
   students          Student[]
+  sessions          ClassSession[]
 
   @@index([trainerId, courseId])
 }
@@ -355,3 +377,87 @@ model Web3Credential {
   @@index([certificateId])
   @@index([ownerWallet])
 }
+
+// ============================================================
+// KodeToCareer Cohort Management & Daily Tracking Models
+// ============================================================
+
+model ClassSession {
+  id            String           @id @default(uuid()) @db.Uuid
+  batchId       String           @db.Uuid
+  batch         CertificateBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  title         String           // e.g. "Day 15: React Hooks & State Management"
+  description   String?          // Session agenda / notes
+  sessionDate   DateTime         // The date of this class
+  sessionType   SessionType      @default(LECTURE)
+  meetLink      String?          // Google Meet link (overrides batch default if set)
+  recordingUrl  String?          // Google Drive / YouTube unlisted video link
+  resourceUrl   String?          // Additional resource links (slides, code repo, etc.)
+  dayNumber     Int?             // Day number in the course (e.g. Day 1, Day 2, ...)
+  isCompleted   Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  attendance    StudentAttendance[]
+
+  @@index([batchId])
+  @@index([sessionDate])
+  @@index([sessionType])
+}
+
+model StudentAttendance {
+  id          String       @id @default(uuid()) @db.Uuid
+  studentId   String       @db.Uuid
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  sessionId   String       @db.Uuid
+  session     ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  isPresent   Boolean      @default(false)
+  checkedInAt DateTime?
+  notes       String?      // e.g. "Joined late" or "Left early"
+  createdAt   DateTime     @default(now())
+
+  @@unique([studentId, sessionId])
+  @@index([studentId])
+  @@index([sessionId])
+}
+
+model AssignmentSubmission {
+  id             String           @id @default(uuid()) @db.Uuid
+  studentId      String           @db.Uuid
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title          String           // e.g. "Week 3 Assignment: Build a REST API"
+  description    String?
+  weekNumber     Int?             // Which week of the course
+  githubUrl      String?          // GitHub repository link
+  liveUrl        String?          // Live demo URL
+  submissionNote String?          // Student notes about their submission
+  status         SubmissionStatus @default(SUBMITTED)
+  score          Int?             // Score out of 100
+  maxScore       Int              @default(100)
+  trainerFeedback String?        // Trainer's written feedback
+  submittedAt    DateTime         @default(now())
+  gradedAt       DateTime?
+  createdAt      DateTime         @default(now())
+
+  @@index([studentId])
+  @@index([status])
+}
+
+model StudentProgress {
+  id                  String   @id @default(uuid()) @db.Uuid
+  studentId           String   @unique @db.Uuid
+  student             Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  attendanceRate      Float    @default(0)   // 0.0 – 100.0 (% of sessions attended)
+  assignmentRate      Float    @default(0)   // 0.0 – 100.0 (% of assignments submitted & graded)
+  capstoneScore       Float    @default(0)   // 0.0 – 100.0 (final capstone project score)
+  totalPercentage     Float    @default(0)   // Weighted: (attendance*40 + assignment*40 + capstone*20) / 100
+  totalSessionsAttended  Int   @default(0)
+  totalSessionsAvailable Int   @default(0)
+  totalAssignmentsSubmitted Int @default(0)
+  totalAssignmentsAvailable Int @default(0)
+  isComplete          Boolean  @default(false) // true when totalPercentage >= 100
+  completedAt         DateTime?
+  lastUpdated         DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([isComplete])
+}
+

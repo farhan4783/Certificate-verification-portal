@@ -2,15 +2,13 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import StatCard from "@/components/dashboard/StatCard";
-import { Award, ShieldCheck, Trophy, Briefcase } from "lucide-react";
+import { Award, ShieldCheck, Trophy, Briefcase, MonitorPlay, Video, Calendar, BookOpen, ArrowRight, ExternalLink } from "lucide-react";
 import KtcCareerPassport from "@/components/dashboard/KtcCareerPassport";
+import Link from "next/link";
 
 export default async function StudentOverviewPage() {
   const session = await getSession();
-
-  if (!session) {
-    redirect("/login");
-  }
+  if (!session) redirect("/login");
 
   const student = await prisma.student.findFirst({
     where: { user: { email: session.email } },
@@ -18,6 +16,8 @@ export default async function StudentOverviewPage() {
       user: { select: { name: true } },
       course: { select: { title: true } },
       organization: { select: { name: true } },
+      batch: { select: { batchName: true, meetLink: true, driveFolderUrl: true } },
+      progress: true,
       certificates: {
         orderBy: { createdAt: "desc" },
         include: {
@@ -27,6 +27,8 @@ export default async function StudentOverviewPage() {
       },
       projects: { select: { id: true } },
       achievements: { select: { id: true } },
+      attendance: { where: { isPresent: true }, select: { id: true } },
+      submissions: { select: { id: true } },
     },
   });
 
@@ -45,9 +47,89 @@ export default async function StudentOverviewPage() {
     0
   );
 
+  // Determine today's activity type
+  const dayOfWeek = new Date().getDay();
+  const dayConfig = dayOfWeek === 0
+    ? { type: "🛠️ Project Day", label: "Sunday — Assignment & Project Building", color: "emerald" }
+    : dayOfWeek === 6
+    ? { type: "❓ Doubt Session", label: "Saturday — Live Doubt Clearing & Q&A", color: "amber" }
+    : { type: "📚 Daily Class", label: `${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dayOfWeek]} — Live Interactive Lecture`, color: "blue" };
+
+  const progressPct = student.progress?.totalPercentage || 0;
+
   return (
     <div>
-      {/* KTC Career Passport Header */}
+      {/* Today's Schedule Banner */}
+      <div className="bg-gradient-to-br from-blue-50 via-sky-50 to-white border border-blue-200 rounded-2xl p-6 mb-8 relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-sky-200/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{dayConfig.type.split(" ")[0]}</span>
+              <div>
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Today&apos;s Schedule</p>
+                <h2 className="text-lg font-extrabold text-slate-900">{dayConfig.label}</h2>
+              </div>
+            </div>
+
+            {student.batch && (
+              <p className="text-xs text-slate-600">
+                Batch: <span className="font-bold text-slate-900">{student.batch.batchName}</span> · {student.course.title}
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            {/* Join Google Meet Button */}
+            {student.batch?.meetLink && (
+              <a
+                href={student.batch.meetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-3 bg-gradient-to-r from-sky-500 to-blue-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-sky-500/20 hover:from-sky-600 hover:to-blue-700 transition-all flex items-center gap-2 animate-pulse hover:animate-none"
+              >
+                <MonitorPlay className="h-5 w-5" />
+                Join Google Meet Class
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+
+            {/* Drive Recordings */}
+            {student.batch?.driveFolderUrl && (
+              <Link
+                href="/dashboard/student/recordings"
+                className="px-4 py-3 bg-white border border-slate-200 text-slate-800 text-sm font-bold rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-2xs"
+              >
+                <Video className="h-4 w-4 text-blue-600" />
+                Class Recordings
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="relative z-10 mt-5 pt-4 border-t border-blue-200/60">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-slate-700">Course Completion Progress</p>
+            <p className="text-xs font-extrabold text-blue-700">{Math.round(progressPct)}%</p>
+          </div>
+          <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-sky-500 to-blue-600 rounded-full transition-all duration-1000 ease-out"
+              style={{ width: `${Math.min(100, progressPct)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between mt-2 text-[10px] font-medium text-slate-500">
+            <span>{student.attendance.length} classes attended · {student.submissions.length} assignments submitted</span>
+            {progressPct >= 100 && (
+              <span className="text-emerald-700 font-bold">🎉 Course Complete! Certificate Ready</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* KTC Career Passport */}
       <KtcCareerPassport
         studentName={student.user.name}
         enrollmentNumber={student.enrollmentNumber}
@@ -152,9 +234,10 @@ export default async function StudentOverviewPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
         {[
           { href: "/dashboard/student/certificates", label: "Download PDFs", icon: "⬇️" },
+          { href: "/dashboard/student/recordings", label: "Class Recordings", icon: "🎬" },
           { href: "/dashboard/student/portfolio", label: "Add Projects", icon: "💡" },
           { href: "/dashboard/student/achievements", label: "Achievements", icon: "🏆" },
           { href: "/dashboard/student/profile", label: "View Profile", icon: "👤" },
