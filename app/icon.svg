@@ -1,0 +1,17 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ktcFaviconGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00C6FF" />
+      <stop offset="50%" stopColor="#0072FF" />
+      <stop offset="100%" stopColor="#0052D4" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(4, 3)">
+    <!-- Left vertical bar -->
+    <rect x="12" y="12" width="18" height="70" rx="9" fill="url(#ktcFaviconGrad)" />
+    <!-- Upper arm -->
+    <path d="M36 50 L68 16 C71 12 77 12 80 16 L82 18 C85 22 85 28 81 32 L52 62 Z" fill="url(#ktcFaviconGrad)" />
+    <!-- Lower arm -->
+    <path d="M50 48 L78 78 C82 82 82 87 78 90 L75 92 C71 95 65 94 61 90 L38 64 Z" fill="url(#ktcFaviconGrad)" />
+  </g>
+</svg>
