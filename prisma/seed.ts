@@ -260,18 +260,44 @@ async function main() {
       },
     });
 
-    // Create Initial Audit Log
-    await prisma.auditLog.create({
+    // Seed Projects & Achievements for KodeToCareer Student Showcase
+    await prisma.project.create({
       data: {
-        userId: adminUser.id,
-        action: "GENERATE",
-        table: "Certificate",
-        recordId: cert.id,
-        metadata: { certificateId, studentName: rawName },
+        studentId: student.id,
+        title: `${rawName.split(" ")[0]}'s AI-Powered SaaS Platform`,
+        description: "Full-stack MERN application integrating Gemini AI API, Tailwind CSS, Redis caching, and Stripe payments.",
+        techStack: ["MongoDB", "Express.js", "React", "Node.js", "Gemini AI", "TailwindCSS"],
+        projectUrl: `https://${emailSlug}-saas.vercel.app`,
+        githubUrl: `https://github.com/kodetocareer/${emailSlug}-saas`,
+        isFeatured: true,
       },
     });
 
-    console.log(`  [${i + 1}/${STUDENT_NAMES.length}] ✓ Issued Cert ${certificateId} for ${rawName} (${email})`);
+    await prisma.project.create({
+      data: {
+        studentId: student.id,
+        title: "Decentralized Credential Verification dApp",
+        description: "Web3 application anchored on Polygon testnet with Ethers.js and MetaMask wallet signature verification.",
+        techStack: ["Next.js", "Ethers.js", "Solidity", "Prisma", "TypeScript"],
+        projectUrl: `https://${emailSlug}-web3.vercel.app`,
+        githubUrl: `https://github.com/kodetocareer/${emailSlug}-web3`,
+        isFeatured: false,
+      },
+    });
+
+    await prisma.achievement.create({
+      data: {
+        studentId: student.id,
+        title: "KodeToCareer MERN AI Bootcamp Top Performer",
+        description: "Awarded for exceptional capstone project execution and 100% assignment score in the 16-week intensive cohort.",
+        issuer: "KodeToCareer Tech Academy",
+        type: "ACADEMIC",
+        achievementDate: new Date(),
+        isFeatured: true,
+      },
+    });
+
+    console.log(`  [${i + 1}/${STUDENT_NAMES.length}] ✓ Issued Cert ${certificateId} & Portfolio for ${rawName} (${email})`);
   }
 
   console.log("\n🎉 All 13 students successfully enrolled & certificates issued!");

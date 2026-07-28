@@ -94,7 +94,8 @@ export default async function VerifyPage({ params }: PageProps) {
       },
       include: {
         student: {
-          include: {
+          select: {
+            enrollmentNumber: true,
             user: { select: { name: true } },
             organization: { select: { name: true, logo: true } },
           },
@@ -248,7 +249,17 @@ export default async function VerifyPage({ params }: PageProps) {
                   
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">
                     <span className="text-slate-500 text-xs font-mono uppercase tracking-wider">Recipient</span>
-                    <span className="col-span-2 text-sm font-semibold text-slate-100">{studentName}</span>
+                    <div className="col-span-2 flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-100">{studentName}</span>
+                      {cert?.student?.enrollmentNumber && (
+                        <Link
+                          href={`/profile/${cert.student.enrollmentNumber}`}
+                          className="text-xs text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20"
+                        >
+                          KTC Talent Profile ↗
+                        </Link>
+                      )}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 py-2 border-b border-slate-800/40">

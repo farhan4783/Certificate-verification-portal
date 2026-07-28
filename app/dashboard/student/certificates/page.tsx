@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import CopyLinkButton from "@/components/ui/CopyLinkButton";
 import MintNftButton from "@/components/dashboard/MintNftButton";
+import ShareCredentialModal from "@/components/dashboard/ShareCredentialModal";
 
 export default async function StudentCertificatesPage() {
   const session = await getSession();
@@ -137,7 +138,12 @@ export default async function StudentCertificatesPage() {
                     >
                       🔍 Verify
                     </a>
-                    {/* Client Component for clipboard access */}
+                    {/* Client Component for clipboard access & 1-click social sharing */}
+                    <ShareCredentialModal
+                      certificateId={cert.certificateId}
+                      courseTitle={cert.course.title}
+                      issueDate={cert.issueDate.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                    />
                     <CopyLinkButton certificateId={cert.certificateId} />
                   </div>
                 )}

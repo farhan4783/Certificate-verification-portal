@@ -4,6 +4,8 @@ import prisma from "@/lib/prisma";
 import StatCard from "@/components/dashboard/StatCard";
 import { Award, ShieldCheck, Trophy, Briefcase } from "lucide-react";
 
+import KtcCareerPassport from "@/components/dashboard/KtcCareerPassport";
+
 export default async function StudentOverviewPage() {
   const session = await getSession();
 
@@ -18,7 +20,6 @@ export default async function StudentOverviewPage() {
       course: { select: { title: true } },
       organization: { select: { name: true } },
       certificates: {
-        take: 3,
         orderBy: { createdAt: "desc" },
         include: {
           course: { select: { title: true } },
@@ -47,15 +48,16 @@ export default async function StudentOverviewPage() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-100">
-          Welcome, {student.user.name}! 🎓
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">
-          {student.course.title} · {student.organization.name}
-        </p>
-      </div>
+      {/* KTC Career Passport Header */}
+      <KtcCareerPassport
+        studentName={student.user.name}
+        enrollmentNumber={student.enrollmentNumber}
+        courseTitle={student.course.title}
+        organizationName={student.organization.name}
+        certificatesCount={issuedCerts.length}
+        projectsCount={student.projects.length}
+        achievementsCount={student.achievements.length}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
