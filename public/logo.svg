@@ -1,0 +1,24 @@
+<svg viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ktcBrandGradient" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#00C6FF" />
+      <stop offset="50%" stopColor="#0072FF" />
+      <stop offset="100%" stopColor="#0052D4" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Icon: Stylized K -->
+  <g transform="translate(10, 5)">
+    <!-- Left vertical bar -->
+    <rect x="12" y="12" width="18" height="70" rx="9" fill="url(#ktcBrandGradient)" />
+    <!-- Upper arm -->
+    <path d="M36 50 L68 16 C71 12 77 12 80 16 L82 18 C85 22 85 28 81 32 L52 62 Z" fill="url(#ktcBrandGradient)" />
+    <!-- Lower arm -->
+    <path d="M50 48 L78 78 C82 82 82 87 78 90 L75 92 C71 95 65 94 61 90 L38 64 Z" fill="url(#ktcBrandGradient)" />
+  </g>
+
+  <!-- Logo Text: KodeToCareer -->
+  <text x="115" y="62" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="44" letter-spacing="-1.5">
+    <tspan fill="url(#ktcBrandGradient)">KodeToCareer</tspan>
+  </text>
+</svg>

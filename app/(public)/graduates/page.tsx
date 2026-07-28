@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import KtcLogo from "@/components/ui/KtcLogo";
 import { Award, Briefcase, CheckCircle2, ExternalLink, Search, ShieldCheck, Sparkles, UserCheck } from "lucide-react";
 
 export const metadata = {
@@ -67,21 +68,7 @@ export default async function GraduatesDirectoryPage({
       {/* Header Bar */}
       <header className="relative z-10 border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <svg className="h-7 w-7" viewBox="0 0 100 100" fill="none">
-              <path d="M20 15C20 12.2 22.2 10 25 10H32C34.8 10 37 12.2 37 15V85C37 87.8 34.8 90 32 90H25C22.2 90 20 87.8 20 85V15Z" fill="url(#ktcGradDirLogo)" />
-              <path d="M42 45L72 15C74 13 77 13 79 15C81 17 81 20 79 22L52.5 48.5L79 75C81 77 81 80 79 82C77 84 74 84 72 82L42 52C40 50 40 47 42 45Z" fill="url(#ktcGradDirLogo)" />
-              <defs>
-                <linearGradient id="ktcGradDirLogo" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#0ea5e9" />
-                  <stop offset="1" stopColor="#3b82f6" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-bold text-base tracking-wide text-sky-400 font-mono">
-              KodeToCareer Talent Showcase
-            </span>
-          </Link>
+          <KtcLogo size="md" href="/" />
 
           <div className="flex items-center gap-4 text-xs font-semibold">
             <Link href="/" className="text-slate-400 hover:text-slate-200 transition-colors">

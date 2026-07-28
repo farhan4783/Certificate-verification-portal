@@ -3,6 +3,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import { VerificationResult } from "@prisma/client";
 import { CheckCircle2, XCircle, AlertTriangle, ExternalLink, Award, ShieldCheck, Cpu } from "lucide-react";
+import KtcLogo from "@/components/ui/KtcLogo";
 import BlockchainAuditCard from "@/components/dashboard/BlockchainAuditCard";
 import SocialShareBar from "@/components/dashboard/SocialShareBar";
 import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
@@ -180,14 +181,9 @@ export default async function VerifyPage({ params }: PageProps) {
       {/* Header */}
       <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <Award className="h-7 w-7 text-amber-500 group-hover:scale-110 transition-transform duration-200" />
-            <span className="font-bold text-lg tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-              KODE TO CAREER
-            </span>
-          </Link>
-          <div className="text-xs text-slate-500 font-mono hidden sm:block">
-            Secure Credential Network v1.0
+          <KtcLogo size="md" href="/" />
+          <div className="text-xs text-slate-400 font-mono hidden sm:block">
+            Sovereign Ledger Verification v1.0
           </div>
         </div>
       </header>

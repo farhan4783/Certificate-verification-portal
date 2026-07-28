@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Award, Eye, EyeOff, Shield } from "lucide-react";
 import Link from "next/link";
+import KtcLogo from "@/components/ui/KtcLogo";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -55,24 +56,12 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex flex-col items-center gap-3">
-            <svg className="h-12 w-12" viewBox="0 0 100 100" fill="none">
-              <path d="M20 15C20 12.2 22.2 10 25 10H32C34.8 10 37 12.2 37 15V85C37 87.8 34.8 90 32 90H25C22.2 90 20 87.8 20 85V15Z" fill="url(#ktcLogoGrad3)" />
-              <path d="M42 45L72 15C74 13 77 13 79 15C81 17 81 20 79 22L52.5 48.5L79 75C81 77 81 80 79 82C77 84 74 84 72 82L42 52C40 50 40 47 42 45Z" fill="url(#ktcLogoGrad3)" />
-              <defs>
-                <linearGradient id="ktcLogoGrad3" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#0ea5e9" />
-                  <stop offset="1" stopColor="#3b82f6" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-bold text-lg tracking-widest text-sky-400 uppercase">
-              KodeToCareer
-            </span>
-          </Link>
-          <h1 className="text-xl font-bold text-slate-100 mt-6">Sign in to your portal</h1>
-          <p className="text-sm text-slate-500 mt-1">Access your certificates and dashboard</p>
+        <div className="text-center mb-8 flex justify-center">
+          <KtcLogo size="xl" href="/" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-slate-100 mt-4">Sign in to your portal</h1>
+          <p className="text-sm text-slate-400 mt-1">Access your verified KodeToCareer portal</p>
         </div>
 
         {/* Card */}

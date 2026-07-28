@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
+import KtcLogo from "@/components/ui/KtcLogo";
 import { Award, ShieldCheck, ExternalLink, Code, Globe, Briefcase, Trophy, GraduationCap } from "lucide-react";
 
 interface PageProps {
@@ -47,14 +48,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
       {/* Header */}
       <header className="border-b border-slate-900 bg-slate-950/80 backdrop-blur-md sticky top-0 z-10 w-full px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 group">
-            <Award className="h-6 w-6 text-amber-500 group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-base tracking-wider bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-              KODE TO CAREER
-            </span>
-          </Link>
-          <span className="text-xs text-slate-500 font-mono hidden sm:block">
-            Public Profile · {student.enrollmentNumber}
+          <KtcLogo size="md" href="/" />
+          <span className="text-xs text-slate-400 font-mono hidden sm:block">
+            Public Candidate Profile · {student.enrollmentNumber}
           </span>
         </div>
       </header>

@@ -3,33 +3,21 @@ import { Award, ShieldCheck, Download, Users, Zap, Lock, ArrowRight, CheckCircle
 import HomeVerifyWidget from "@/components/dashboard/HomeVerifyWidget";
 import PdfFileVerifier from "@/components/dashboard/PdfFileVerifier";
 
+import KtcLogo from "@/components/ui/KtcLogo";
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden antialiased">
       
-      {/* Background Grid & Ambient Glows */}
+      {/* Background Grid & Ambient Electric Blue Glows */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-35" />
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-sky-500/15 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/70 backdrop-blur-lg border-b border-slate-900/60">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-slate-900/80">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <svg className="h-7 w-7" viewBox="0 0 100 100" fill="none">
-              <path d="M20 15C20 12.2 22.2 10 25 10H32C34.8 10 37 12.2 37 15V85C37 87.8 34.8 90 32 90H25C22.2 90 20 87.8 20 85V15Z" fill="url(#ktcLogoGrad)" />
-              <path d="M42 45L72 15C74 13 77 13 79 15C81 17 81 20 79 22L52.5 48.5L79 75C81 77 81 80 79 82C77 84 74 84 72 82L42 52C40 50 40 47 42 45Z" fill="url(#ktcLogoGrad)" />
-              <defs>
-                <linearGradient id="ktcLogoGrad" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#0ea5e9" />
-                  <stop offset="1" stopColor="#3b82f6" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <span className="font-bold text-base tracking-wide text-sky-400 font-mono">
-              KodeToCareer
-            </span>
-          </div>
+          <KtcLogo size="md" href="/" />
           <div className="flex items-center gap-4">
             <Link
               href="/graduates"
@@ -214,16 +202,7 @@ export default function HomePage() {
       <footer className="border-t border-slate-900 bg-slate-950/80 py-10 px-6 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
           <div className="flex items-center gap-2">
-            <svg className="h-5 w-5" viewBox="0 0 100 100" fill="none">
-              <path d="M20 15C20 12.2 22.2 10 25 10H32C34.8 10 37 12.2 37 15V85C37 87.8 34.8 90 32 90H25C22.2 90 20 87.8 20 85V15Z" fill="url(#ktcLogoGrad2)" />
-              <path d="M42 45L72 15C74 13 77 13 79 15C81 17 81 20 79 22L52.5 48.5L79 75C81 77 81 80 79 82C77 84 74 84 72 82L42 52C40 50 40 47 42 45Z" fill="url(#ktcLogoGrad2)" />
-              <defs>
-                <linearGradient id="ktcLogoGrad2" x1="20" y1="10" x2="80" y2="90" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#0ea5e9" />
-                  <stop offset="1" stopColor="#3b82f6" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <KtcLogo size="sm" href="/" showText={false} />
             <span>© 2026 KodeToCareer. All rights reserved.</span>
           </div>
           <div className="flex gap-6 text-slate-500 font-semibold">

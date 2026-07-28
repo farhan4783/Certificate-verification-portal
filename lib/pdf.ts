@@ -101,13 +101,13 @@ export async function generateCertificatePDF(data: PDFData): Promise<Buffer> {
     const config = data.layoutConfig || {};
     const preset = config.presetStyle || "classic-gold";
 
-    // Color Palettes based on Presets
-    let bgRgb = rgb(0.98, 0.98, 0.96); // warm ivory
-    let primaryRgb = rgb(0.08, 0.18, 0.36); // navy blue
-    let accentRgb = rgb(0.83, 0.69, 0.22); // gold
-    let borderOuterRgb = rgb(0.08, 0.18, 0.36);
-    let borderInnerRgb = rgb(0.83, 0.69, 0.22);
-    let textMutedRgb = rgb(0.35, 0.35, 0.35);
+    // Color Palettes based on Presets (Default: KodeToCareer Electric Blue)
+    let bgRgb = rgb(0.98, 0.99, 1.0); // clean slate white
+    let primaryRgb = rgb(0.0, 0.45, 1.0); // KodeToCareer Electric Blue #0072FF
+    let accentRgb = rgb(0.0, 0.77, 1.0); // KodeToCareer Cyan #00C6FF
+    let borderOuterRgb = rgb(0.04, 0.08, 0.16); // Deep Navy #0B1329
+    let borderInnerRgb = rgb(0.0, 0.45, 1.0); // Electric Blue #0072FF
+    let textMutedRgb = rgb(0.25, 0.35, 0.5);
 
     if (preset === "modern-cyber") {
       bgRgb = rgb(0.05, 0.08, 0.14);
