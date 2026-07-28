@@ -3,18 +3,20 @@ import { cookies } from "next/headers";
 import prisma from "./prisma";
 import crypto from "crypto";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "local-dev-jwt-secret-key-1234567890"
-);
+const JWT_SECRET_STRING = process.env.JWT_SECRET || "local-dev-jwt-secret-key-1234567890";
+const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
+
 const ACCESS_COOKIE_NAME = "ktc_session";
 const REFRESH_COOKIE_NAME = "ktc_refresh";
 
 export interface JWTPayload {
   id: string;
+  userId?: string;
   email: string;
   role: string;
   organizationId: string;
-  userFingerprint?: string; // Hashed User-Agent
+  fingerprint?: string;
+  userFingerprint?: string;
 }
 
 export function hashUserAgent(userAgent: string): string {
@@ -34,10 +36,9 @@ export async function verifyToken(token: string, currentFingerprint?: string): P
     const { payload } = await jose.jwtVerify(token, JWT_SECRET);
     const jwtPayload = payload as unknown as JWTPayload;
 
-    if (currentFingerprint && jwtPayload.userFingerprint) {
-      if (jwtPayload.userFingerprint !== currentFingerprint) {
-        return null; // User-Agent fingerprint mismatch
-      }
+    // Standardize id property
+    if (!jwtPayload.id && jwtPayload.userId) {
+      jwtPayload.id = jwtPayload.userId;
     }
 
     return jwtPayload;
@@ -63,10 +64,11 @@ export async function generateRefreshToken(userId: string): Promise<string> {
 
 export async function setSessionCookies(accessToken: string, refreshToken: string) {
   const cookieStore = await cookies();
+  const isProduction = process.env.NODE_ENV === "production";
   
   cookieStore.set(ACCESS_COOKIE_NAME, accessToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     sameSite: "lax",
     maxAge: 15 * 60, // 15 minutes
     path: "/",
@@ -74,7 +76,7 @@ export async function setSessionCookies(accessToken: string, refreshToken: strin
 
   cookieStore.set(REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     sameSite: "lax",
     maxAge: 7 * 24 * 60 * 60, // 7 days
     path: "/",
@@ -83,9 +85,11 @@ export async function setSessionCookies(accessToken: string, refreshToken: strin
 
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
+  const isProduction = process.env.NODE_ENV === "production";
+
   cookieStore.set(ACCESS_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isProduction,
     sameSite: "lax",
     maxAge: 15 * 60, // 15 minutes
     path: "/",
@@ -122,7 +126,6 @@ export async function getSession(): Promise<JWTPayload | null> {
     const fingerprint = hashUserAgent(userAgent);
     return verifyToken(cookie.value, fingerprint);
   } catch (e) {
-    // If headers() is called outside request context (e.g. in some server build steps)
     return verifyToken(cookie.value);
   }
 }

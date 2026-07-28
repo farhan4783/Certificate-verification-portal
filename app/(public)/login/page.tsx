@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Award, Eye, EyeOff, Shield } from "lucide-react";
+import { Eye, EyeOff, Shield } from "lucide-react";
 import Link from "next/link";
 import KtcLogo from "@/components/ui/KtcLogo";
 
@@ -23,24 +23,36 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch (jsonErr) {
+        const text = await res.text().catch(() => "");
+        setError(`Server returned status ${res.status}: ${text || "Invalid response"}`);
+        return;
+      }
 
       if (!res.ok) {
-        setError(data.error?.message ?? "Invalid credentials");
+        setError(data.error?.message ?? "Invalid email or password");
         return;
       }
 
       // Redirect based on role
       const role = data.data?.user?.role;
-      if (role === "SUPER_ADMIN") window.location.href = "/dashboard/admin";
-      else if (role === "TRAINER") window.location.href = "/dashboard/trainer";
-      else if (role === "STUDENT") window.location.href = "/dashboard/student";
-      else window.location.href = "/";
-    } catch {
-      setError("Network error. Please try again.");
+      if (role === "SUPER_ADMIN") {
+        window.location.assign("/dashboard/admin");
+      } else if (role === "TRAINER") {
+        window.location.assign("/dashboard/trainer");
+      } else if (role === "STUDENT") {
+        window.location.assign("/dashboard/student");
+      } else {
+        window.location.assign("/");
+      }
+    } catch (err: any) {
+      setError(err?.message ? `Connection error: ${err.message}` : "Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -50,28 +62,28 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
       {/* Background decorations */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-amber-500/5 blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-violet-500/5 blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-blue-600/10 blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-sm">
-        {/* Logo */}
+        {/* Logo Header */}
         <div className="text-center mb-8 flex justify-center">
           <KtcLogo size="xl" href="/" />
         </div>
-        <div className="text-center">
-          <h1 className="text-xl font-bold text-slate-100 mt-4">Sign in to your portal</h1>
-          <p className="text-sm text-slate-400 mt-1">Access your verified KodeToCareer portal</p>
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-slate-100">Sign in to KodeToCareer</h1>
+          <p className="text-xs text-slate-400 mt-1">Access your verified credentials and portal</p>
         </div>
 
         {/* Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl shadow-slate-950/50">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Error */}
+            {/* Error Display */}
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-rose-500/10 border border-rose-500/25 rounded-lg text-sm text-rose-400">
-                <Shield className="h-4 w-4 shrink-0" />
-                {error}
+              <div className="flex items-start gap-2 p-3 bg-rose-500/10 border border-rose-500/25 rounded-xl text-xs text-rose-400 leading-relaxed">
+                <Shield className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -86,8 +98,8 @@ export default function LoginPage() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="you@example.com"
-                className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition-colors placeholder:text-slate-600"
+                placeholder="you@kodetocareer.com"
+                className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-600"
               />
             </div>
 
@@ -104,7 +116,7 @@ export default function LoginPage() {
                   required
                   autoComplete="current-password"
                   placeholder="••••••••"
-                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:border-amber-500 transition-colors placeholder:text-slate-600"
+                  className="w-full bg-slate-950 border border-slate-800 text-slate-200 text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-600"
                 />
                 <button
                   type="button"
@@ -120,19 +132,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-60 disabled:cursor-not-allowed text-slate-900 font-bold text-sm rounded-xl transition-all mt-2"
+              className="w-full py-3 bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl transition-all mt-2 shadow-lg shadow-sky-500/20 flex items-center justify-center gap-1.5"
             >
-              {loading ? "Signing in…" : "Sign In →"}
+              {loading ? "Authenticating…" : "Sign In →"}
             </button>
           </form>
 
           {/* Demo credentials */}
           <div className="mt-5 pt-5 border-t border-slate-800">
-            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-600 mb-2 text-center">Demo Credentials</p>
+            <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mb-2.5 text-center">
+              Quick Test Credentials
+            </p>
             <div className="grid grid-cols-1 gap-1.5">
               {[
-                { role: "Admin", email: "admin@kodetocareer.com", pwd: "admin1234" },
-                { role: "Trainer", email: "trainer@kodetocareer.com", pwd: "trainer1234" },
+                { role: "Super Admin", email: "admin@kodetocareer.com", pwd: "admin1234" },
+                { role: "Trainer", email: "arbaaz@kodetocareer.com", pwd: "trainer1234" },
                 { role: "Student", email: "student@kodetocareer.com", pwd: "student1234" },
               ].map((cred) => (
                 <button
@@ -142,19 +156,19 @@ export default function LoginPage() {
                     (document.getElementById("email") as HTMLInputElement).value = cred.email;
                     (document.getElementById("password") as HTMLInputElement).value = cred.pwd;
                   }}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg bg-slate-800/60 border border-slate-700/50 hover:bg-slate-800 transition-colors"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 hover:bg-slate-850 transition-colors text-left"
                 >
-                  <span className="text-xs text-slate-400 font-medium">{cred.role}</span>
-                  <span className="text-xs text-slate-600 font-mono truncate ml-2">{cred.email}</span>
+                  <span className="text-xs text-sky-400 font-semibold">{cred.role}</span>
+                  <span className="text-xs text-slate-400 font-mono truncate ml-2">{cred.email}</span>
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <p className="text-center text-xs text-slate-600 mt-6">
-          Want to verify a certificate?{" "}
-          <Link href="/verify" className="text-amber-400 hover:text-amber-300 transition-colors">
+        <p className="text-center text-xs text-slate-500 mt-6">
+          Verify a credential without logging in?{" "}
+          <Link href="/verify" className="text-sky-400 hover:text-sky-300 font-semibold transition-colors">
             Verify here →
           </Link>
         </p>

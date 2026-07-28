@@ -13,7 +13,7 @@ const loginSchema = z.object({
 export async function POST(request: Request) {
   try {
     const ipAddress = request.headers.get("x-forwarded-for") || "127.0.0.1";
-    const rateLimit = await checkRateLimit(`login:${ipAddress}`, 5, 300);
+    const rateLimit = await checkRateLimit(`login:${ipAddress}`, 10, 300);
     if (!rateLimit.success) {
       return NextResponse.json(
         {
@@ -46,9 +46,9 @@ export async function POST(request: Request) {
 
     const { email, password } = result.data;
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // Find user by email (case insensitive)
+    const user = await prisma.user.findFirst({
+      where: { email: { equals: email.trim(), mode: "insensitive" } },
     });
 
     if (!user) {
@@ -83,12 +83,14 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get("user-agent") || "";
     const fingerprint = hashUserAgent(userAgent);
 
-    // Sign JWT Token
+    // Sign JWT Token with normalized property names (id & userId, fingerprint & userFingerprint)
     const payload = {
       id: user.id,
+      userId: user.id,
       email: user.email,
       role: user.role,
       organizationId: user.organizationId,
+      fingerprint,
       userFingerprint: fingerprint,
     };
     
@@ -96,7 +98,7 @@ export async function POST(request: Request) {
     const refreshToken = await generateRefreshToken(user.id);
     await setSessionCookies(accessToken, refreshToken);
 
-    // Record Audit Log (optional, but requested in guidelines)
+    // Record Audit Log (safely caught)
     try {
       await prisma.auditLog.create({
         data: {
@@ -127,17 +129,11 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error("Login API Error:", error);
 
-    let publicErrorMsg = "An unexpected error occurred";
-    if (!process.env.DATABASE_URL) {
-      publicErrorMsg = "Vercel Configuration Error: DATABASE_URL environment variable is missing in Vercel Settings.";
-    } else if (process.env.DATABASE_URL.includes("127.0.0.1") || process.env.DATABASE_URL.includes("localhost")) {
-      publicErrorMsg = "Vercel Configuration Error: DATABASE_URL is pointing to local 127.0.0.1. A cloud PostgreSQL URL is required for Vercel.";
-    } else if (!process.env.JWT_SECRET) {
-      publicErrorMsg = "Vercel Configuration Error: JWT_SECRET environment variable is missing in Vercel Settings.";
-    } else if (error?.code === "P1001" || error?.message?.includes("Can't reach database")) {
-      publicErrorMsg = "Database Connection Error: Unable to reach cloud database server. Please verify your cloud DATABASE_URL in Vercel.";
+    let publicErrorMsg = "An unexpected error occurred during login";
+    if (error?.code === "P1001" || error?.message?.includes("Can't reach database")) {
+      publicErrorMsg = "Database Connection Error: Unable to reach database server.";
     } else if (error?.code === "P2021" || error?.message?.includes("does not exist")) {
-      publicErrorMsg = "Database Schema Error: Tables missing in cloud database. Run 'npx prisma db push && npx prisma db seed'.";
+      publicErrorMsg = "Database Schema Error: Tables missing in database. Run database migrations/seeding.";
     }
 
     return NextResponse.json(
